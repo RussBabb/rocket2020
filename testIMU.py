@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import sys
+sys.path.append("/usr/share/python3-mscl")
 import mscl
 
 #TODO: change these constants to match your setup
-COM_PORT = "COM3"
+COM_PORT = "serial"
 
 try:
     #create a Serial Connection with the specified COM Port, default baud rate of 921600
