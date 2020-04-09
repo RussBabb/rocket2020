@@ -320,6 +320,26 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 fi
 
 ## Setup udev rules
+clear
+print_header
+cat <<- EOF
+	UDEV Rules
+	This will setup udev rules to add symbolic device
+	links for the LORD MicroStrain 3DM-CV5-25 and the
+	RFD 900+.
+	
+EOF
+
+read -p "Install udev rules? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	# Download rules
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-lord3DM.rules -P $TEMP_DIR
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-rfd900.rules -P $TEMP_DIR
+	
+	# Install rules
+	sudo mv $TEMP_DIR/99-lord3DM.rules /etc/udev/rules.d/99-lord3DM.rules
+	sudo mv $TEMP_DIR/99-rfd900.rules /etc/udev/rules.d/99-rfd900.rules
+fi
 
 ## Install MSCL
 clear
