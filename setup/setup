@@ -37,7 +37,7 @@ prompt_wifipass()
 	if [ $COUNT -lt 8 ]; then
 		echo "Password must be at least 8 characters long!"
 		sleep 2
-		wifipass
+		prompt_wifipass
 	fi
 	
 	echo;echo
@@ -46,7 +46,7 @@ prompt_wifipass()
 	if [ $wifians == "y" ] || [ $wifians == "Y" ]; then
 		echo
 	else
-		wifipass
+		prompt_wifipass
 	fi
 }
 
@@ -256,12 +256,18 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo systemctl disable hostapd
 	sudo systemctl disable dnsmasq
 	
+	# Prompt for hotspot SSID
+	echo "Enter a name/SSID for the hotspot."
+	read -p "SSID:" wifiSSID
+	
 	# Prompt for hotspot password
 	prompt_wifipass
 	
 	# Download hostapd configuration file
 	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt -P $TEMP_DIR
 
+	# Set new hotspot SSID
+	sed -i "s/ssid=RPiHotspot/ssid=$wifiSSID/" $TEMP_DIR/hostapd.txt
 	# Set new hotspot password
 	sed -i "s/wpa_passphrase=1234567890/wpa_passphrase=$wifipasswd/" $TEMP_DIR/hostapd.txt
 	# Set country to US
@@ -315,8 +321,12 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 
 	# Install autohotspot script
 	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt -P $TEMP_DIR
-	mv autohotspotN.txt /usr/bin/autohotspotN
-	chmod +x /usr/bin/autohotspotN
+	sudo mv autohotspotN.txt /usr/bin/autohotspotN
+	sudo chmod +x /usr/bin/autohotspotN
+	
+	# Add to temp cron file
+	echo "# Run autohotspot check every minute" >> $TEMPCRON
+	echo "* * * * * sudo /usr/bin/autohotspotN >/dev/null 2>&1" >> $TEMPCRON
 fi
 
 ## Setup udev rules
@@ -366,6 +376,9 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	# Create symbolic link in /usr/local/lib
 	sudo ln -s /usr/share/c++-mscl/libmscl.so /usr/local/lib/libmscl.so
 fi
+
+## Save cron jobs
+crontab $TEMPCRON
 
 ## Cleanup temp files
 rm -r $TEMP_DIR
