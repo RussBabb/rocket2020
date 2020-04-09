@@ -179,7 +179,10 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	mv /etc/default/gpsd /etc/default/gpsd.backup
 	
 	# Download gpsd file
-	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/gpsd/gpsd -P /etc/default/
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/gpsd/gpsd -P $TEMP_DIR
+	
+	# Move gpsd file to correct location
+	sudo mv /etc/default/
 	
 	# Add refclock to chrony.conf
 	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
@@ -257,7 +260,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	prompt_wifipass
 	
 	# Download hostapd configuration file
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt $TEMP_DIR
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt -P $TEMP_DIR
 
 	# Set new hotspot password
 	sed -i "s/wpa_passphrase=1234567890/wpa_passphrase=$wifipasswd/" $TEMP_DIR/hostapd.txt
@@ -285,7 +288,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	echo "address=/email.com/192.168.4.1" >> /etc/dnsmasq.conf
 	
 	# Move interfaces file
-	mv /etc/network/interfaces /etc/network/interfaces.org
+	sudo mv /etc/network/interfaces /etc/network/interfaces.org
 	
 	echo "source-directory /etc/network/interfaces.d" >> /etc/network/interfaces
 
@@ -296,7 +299,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sed 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
 	
 	# Download autohotspot service file
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspot-service.txt $TEMP_DIR
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspot-service.txt -P $TEMP_DIR
 
 	# Install autohotspot service file
 	sudo mv $TEMP_DIR/autohotspot-service.txt /etc/systemd/system/autohotspot.service
@@ -311,7 +314,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	fi
 
 	# Install autohotspot script
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt $TEMP_DIR
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt -P $TEMP_DIR
 	mv autohotspotN.txt /usr/bin/autohotspotN
 	chmod +x /usr/bin/autohotspotN
 fi
