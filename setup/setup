@@ -190,7 +190,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/gpsd/gpsd -P $TEMP_DIR
 	
 	# Move gpsd file to correct location
-	sudo mv /etc/default/
+	sudo mv $TEMP_DIR/gpsd /etc/default/gpsd
 	
 	# Add refclock to chrony.conf
 	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
