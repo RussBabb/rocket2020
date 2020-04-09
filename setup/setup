@@ -86,6 +86,10 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo apt -y full-upgrade
 fi
 
+echo
+echo "Updates finished."
+read -n 1 -s -r -p "Press any key to continue"
+
 ## Enable interfaces 
 # NOTE: Reboot is required before we can install RTC. This simply enables interfaces &
 # writes an emptyfile that we can check for in the second part of the install.
@@ -156,7 +160,11 @@ if [ -f "$CONFIG" ]; then
 
 else
 	echo "File $CONFIG does not exist! Unable to enable interfaces."
-fi 
+fi
+
+echo
+echo "Interfaces enabled."
+read -n 1 -s -r -p "Press any key to continue"
 
 ## Install gpsd and chrony
 clear
@@ -187,6 +195,10 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	# Add refclock to chrony.conf
 	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
 fi
+
+echo
+echo "Installed gpsd and chrony."
+read -n 1 -s -r -p "Press any key to continue"
 
 # Install RTC
 
@@ -226,9 +238,22 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	chmod +x $HOME/bin/conky/*
 	
 	# Add to temp cron file
-	echo "# Start conky at boot" >> $TEMPCRON
-	echo "@reboot sleep 20 && export DISPLAY=:0 && /usr/bin/conky" >> $TEMPCRON
+	# If a line containing "autohotspot" exists
+	if grep -Fq "/usr/bin/conky" $TEMPCRON
+	then
+		# Don't duplicate cronjob
+		echo "Cronjob for conky already added"
+	else
+		# Add cronjob
+		echo "# Start conky at boot" >> $TEMPCRON
+		echo "@reboot sleep 20 && export DISPLAY=:0 && /usr/bin/conky" >> $TEMPCRON
+	fi
+	
 fi
+
+echo
+echo "Installed conky."
+read -n 1 -s -r -p "Press any key to continue"
 
 ## Install autohotspot
 clear
@@ -325,9 +350,22 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo chmod +x /usr/bin/autohotspotN
 	
 	# Add to temp cron file
-	echo "# Run autohotspot check every minute" >> $TEMPCRON
-	echo "* * * * * sudo /usr/bin/autohotspotN >/dev/null 2>&1" >> $TEMPCRON
+	# If a line containing "authotspotN" exists
+	if grep -Fq "sudo /usr/bin/autohotspotN" $TEMPCRON
+	then
+		# Don't duplicate cronjob
+		echo "Cronjob for autohotspotN already added"
+	else
+		# Add cronjob
+		echo "# Run autohotspot check every minute" >> $TEMPCRON
+		echo "* * * * * sudo /usr/bin/autohotspotN >/dev/null 2>&1" >> $TEMPCRON
+	fi
+	
 fi
+
+echo
+echo "Installed hostapd, dnsmasq, autohotspot scripts, and configured autohotspot."
+read -n 1 -s -r -p "Press any key to continue"
 
 ## Setup udev rules
 clear
@@ -350,6 +388,10 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo mv $TEMP_DIR/99-lord3DM.rules /etc/udev/rules.d/99-lord3DM.rules
 	sudo mv $TEMP_DIR/99-rfd900.rules /etc/udev/rules.d/99-rfd900.rules
 fi
+
+echo
+echo "Installed udev rules."
+read -n 1 -s -r -p "Press any key to continue"
 
 ## Install MSCL
 clear
@@ -377,8 +419,37 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo ln -s /usr/share/c++-mscl/libmscl.so /usr/local/lib/libmscl.so
 fi
 
-## Save cron jobs
+echo
+echo "Installed MSCL."
+read -n 1 -s -r -p "Press any key to continue"
+
+## Cleanup and restart
+
+# Save cronjobs
 crontab $TEMPCRON
 
 ## Cleanup temp files
 rm -r $TEMP_DIR
+
+## Ask to reboot
+clear
+print_header
+cat <<- EOF
+	MSCL
+	The MicroStrain Communication Library is needed
+	for the avionics code to communicate with the
+	IMU.
+	
+EOF
+
+read -p "Reboot now? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	echo
+	echo "System will reboot in 5 seconds"
+	sleep 5
+	sudo reboot
+else
+	echo
+	echo "Some changes will not work until the system reboots."
+	echo "Please reboot the system as soon as possible."
+fi
