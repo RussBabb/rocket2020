@@ -320,7 +320,32 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 fi
 
 ## Setup udev rules
+
 ## Install MSCL
+clear
+print_header
+cat <<- EOF
+	MSCL
+	The MicroStrain Communication Library is needed
+	for the avionics code to communicate with the
+	IMU.
+	
+EOF
+
+read -p "Install MSCL? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	# Download MSCL Raspbian package
+	wget https://github.com/LORD-MicroStrain/MSCL/releases/download/v55.0.1/c++-mscl_55.0.1_armhf.deb -P $TEMP_DIR
+	
+	# Install MSCL
+	sudo dpkg -i $TEMP_DIR/c++-mscl_55.0.1_armhf.deb  
+	
+	# Install dependencies
+	sudo apt install -f
+	
+	# Create symbolic link in /usr/local/lib
+	sudo ln -s /usr/share/c++-mscl/libmscl.so /usr/local/lib/libmscl.so
+fi
 
 ## Cleanup temp files
 rm -r $TEMP_DIR
