@@ -38,15 +38,17 @@ prompt_wifipass()
 		echo "Password must be at least 8 characters long!"
 		sleep 2
 		prompt_wifipass
+		return 0
 	fi
 	
 	echo;echo
 	echo "You entered $wifipasswd"
 	read -p "Is this correct? y/n " wifians
 	if [ $wifians == "y" ] || [ $wifians == "Y" ]; then
-		echo
+		return 0
 	else
 		prompt_wifipass
+		return 0
 	fi
 }
 
@@ -129,20 +131,20 @@ if [ -f "$CONFIG" ]; then
 	if grep -Fq "start_x" $CONFIG
 	then
 		# Replace the line
-		sed -i "s/start_x=0/start_x=1/g" $CONFIG
+		sudo sed -i "s/start_x=0/start_x=1/g" $CONFIG
 	else
 		# Create the definition
-		echo "start_x=1" >> $CONFIG
+		sudo echo "start_x=1" >> $CONFIG
 	fi
 
 	# If a line containing "gpu_mem" exists
 	if grep -Fq "gpu_mem" $CONFIG
 	then
 		# Replace the line
-		sed -i "/gpu_mem/c\gpu_mem=128" $CONFIG
+		sudo sed -i "/gpu_mem/c\gpu_mem=128" $CONFIG
 	else
 		# Create the definition
-		echo "gpu_mem=128" >> $CONFIG
+		sudo echo "gpu_mem=128" >> $CONFIG
 	fi
 
 	# Enable UART
@@ -152,10 +154,10 @@ if [ -f "$CONFIG" ]; then
 	if grep -Fq "gpu_mem" $CONFIG
 	then
 		# Replace the line
-		sed -i "s/enable_uart=0/enable_uart=1" $CONFIG
+		sudo sed -i "s/enable_uart=0/enable_uart=1" $CONFIG
 	else
 		# Create the definition
-		echo "enable_uart=1" >> $CONFIG
+		sudo echo "enable_uart=1" >> $CONFIG
 	fi
 
 else
@@ -184,7 +186,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo apt install -y gpsd gpsd-clients python-gps chrony python-gi-cairo
 	
 	# Backup gpsd file
-	mv /etc/default/gpsd /etc/default/gpsd.backup
+	sudo mv /etc/default/gpsd /etc/default/gpsd.backup
 	
 	# Download gpsd file
 	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/gpsd/gpsd -P $TEMP_DIR
@@ -193,7 +195,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo mv $TEMP_DIR/gpsd /etc/default/gpsd
 	
 	# Add refclock to chrony.conf
-	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
+	sudo echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
 fi
 
 echo
@@ -282,6 +284,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo systemctl disable dnsmasq
 	
 	# Prompt for hotspot SSID
+	echo; echo; echo;
 	echo "Enter a name/SSID for the hotspot."
 	read -p "SSID:" wifiSSID
 	
@@ -289,7 +292,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	prompt_wifipass
 	
 	# Download hostapd configuration file
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt -P $TEMP_DIR
 
 	# Set new hotspot SSID
 	sed -i "s/ssid=RPiHotspot/ssid=$wifiSSID/" $TEMP_DIR/hostapd.txt
@@ -330,7 +333,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sed 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
 	
 	# Download autohotspot service file
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspot-service.txt -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspot-service.txt -P $TEMP_DIR
 
 	# Install autohotspot service file
 	sudo mv $TEMP_DIR/autohotspot-service.txt /etc/systemd/system/autohotspot.service
@@ -345,7 +348,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	fi
 
 	# Install autohotspot script
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt -P $TEMP_DIR
 	sudo mv autohotspotN.txt /usr/bin/autohotspotN
 	sudo chmod +x /usr/bin/autohotspotN
 	
@@ -381,8 +384,8 @@ EOF
 read -p "Install udev rules? y/n:" ANS
 if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	# Download rules
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-lord3DM.rules -P $TEMP_DIR
-	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-rfd900.rules -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-lord3DM.rules -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/udev/99-rfd900.rules -P $TEMP_DIR
 	
 	# Install rules
 	sudo mv $TEMP_DIR/99-lord3DM.rules /etc/udev/rules.d/99-lord3DM.rules
