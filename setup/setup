@@ -1,0 +1,323 @@
+#!/bin/bash
+
+## SETUP SCRIPT
+# USU Rocket Team
+#
+# Tyler Gardner
+# Version 1.0
+# Updated 08-APR-2020
+#
+# This script installs and configures all of the
+# necessary software for USU's Raspberry Pi based
+# rocket avionics computer system.
+# Made for Raspbian Buster.
+
+## Functions
+print_header()
+{
+	echo "=================================================="
+	echo "                 USU Rocket Team"
+	echo "                SETUP SCRIPT v1.0"
+	echo " ------------------------------------------------"
+	echo " This script installs and configures all of the"
+	echo " necessary software for USU's Raspberry Pi based"
+	echo " rocket avionics computer system."
+	echo "=================================================="
+	echo ""
+}
+
+prompt_wifipass()
+{
+	echo;echo;echo
+	echo "Enter a password for the Raspberry Pi Hotspot."
+	echo "Password should be between 8-63 characters."
+	read -p "Password:" wifipasswd
+	
+	COUNT=${#wifipasswd}
+	if [ $COUNT -lt 8 ]; then
+		echo "Password must be at least 8 characters long!"
+		sleep 2
+		wifipass
+	fi
+	
+	echo;echo
+	echo "You entered $wifipasswd"
+	read -p "Is this correct? y/n " wifians
+	if [ $wifians == "y" ] || [ $wifians == "Y" ]; then
+		echo
+	else
+		wifipass
+	fi
+}
+
+# Setup temp directory
+TEMP_DIR=$HOME/temp/setup.$$.$RANDOM
+mkdir -p $TEMP_DIR
+
+# Setup temp cron file
+TEMPCRON=$TEMP_DIR/tempcron
+
+# Copy current cronjobs into temp cron file
+crontab -l > $TEMPCRON
+
+# Create bin directory and add to path
+if ![ -d $HOME/bin ]; then
+	mkdir -p $HOME/bin
+fi
+
+if grep -Fq "export PATH=$PATH:$HOME/bin" $HOME/.bashrc; then
+	echo "export PATH=$PATH:$HOME/bin" >> $HOME/.bashrc
+fi
+
+## Update software
+clear
+print_header
+cat <<- EOF
+	It is recommended that you update rasbpian
+	if you have not done so recently. This may
+	take some time.
+	
+EOF
+
+read -p "Perform software update? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	sudo apt update
+	sudo apt -y upgrade
+	sudo apt -y full-upgrade
+fi
+
+## Enable interfaces 
+# NOTE: Reboot is required before we can install RTC. This simply enables interfaces &
+# writes an emptyfile that we can check for in the second part of the install.
+clear
+print_header
+cat <<- EOF
+	We will now enable the necessary interfaces
+	on the Raspberry Pi. A restart is required
+	for the interfaces to activate. This will be
+	done later.
+	
+EOF
+
+read -n 1 -s -r -p "Press any key to continue"
+
+touch $HOME/RTC
+
+# Install packages
+sudo apt install python-picamera graphicsmagick python-pip
+pip install twython
+
+CONFIG="/boot/config.txt"
+
+if [ -f "$CONFIG" ]; then 
+	# Enable I2C
+	echo "Enabling I2C"
+	sudo sed -i 's/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/' $CONFIG
+
+	# Enable SPI
+	echo "Enabling SPI"
+	sudo sed -i 's/#dtparam=spi=on/dtparam=spi=on/' $CONFIG
+
+	# Enable camera interface
+	echo "Enabling camera interface"
+
+	# If a line containing "start_x" exists
+	if grep -Fq "start_x" $CONFIG
+	then
+		# Replace the line
+		sed -i "s/start_x=0/start_x=1/g" $CONFIG
+	else
+		# Create the definition
+		echo "start_x=1" >> $CONFIG
+	fi
+
+	# If a line containing "gpu_mem" exists
+	if grep -Fq "gpu_mem" $CONFIG
+	then
+		# Replace the line
+		sed -i "/gpu_mem/c\gpu_mem=128" $CONFIG
+	else
+		# Create the definition
+		echo "gpu_mem=128" >> $CONFIG
+	fi
+
+	# Enable UART
+	echo "Enabling UART"
+
+	# If a line containing "enable_uart" exists
+	if grep -Fq "gpu_mem" $CONFIG
+	then
+		# Replace the line
+		sed -i "s/enable_uart=0/enable_uart=1" $CONFIG
+	else
+		# Create the definition
+		echo "enable_uart=1" >> $CONFIG
+	fi
+
+else
+	echo "File $CONFIG does not exist! Unable to enable interfaces."
+fi 
+
+## Install gpsd and chrony
+clear
+print_header
+cat <<- EOF
+	GPSD and CHRONY
+	GPSD is a daemon that collects information
+	from a GPS receiver and makes it available
+	to applications. CHRONY is a daemon that
+	helps to sync the system clock.
+	
+EOF
+
+read -p "Install gpsd and chrony? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	# Install packages
+	sudo apt install -y gpsd gpsd-clients python-gps chrony python-gi-cairo
+	
+	# Backup gpsd file
+	mv /etc/default/gpsd /etc/default/gpsd.backup
+	
+	# Download gpsd file
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/gpsd/gpsd -P /etc/default/
+	
+	# Add refclock to chrony.conf
+	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
+fi
+
+# Install RTC
+
+## Install conky
+clear
+print_header
+cat <<- EOF
+	CONKY
+	CONKY is a free, light-weight system monitor
+	for X, that displays any kind of information
+	on your desktop. For our rocket, it is setup
+	to show GPS gridsquare, time, cpu and memory
+	use , and application status information.
+	
+EOF
+
+read -p "Install conky? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	# Install packages
+	if ! hash conky 2>/dev/null; then
+		sudo apt install -y conky
+	fi
+	
+	sudo apt install -y ruby2.3
+	sudo gem install gpsd_client
+	sudo gem install maidenhead
+	
+	# Make conky directory in ~/bin
+	mkdir -p $HOME/bin/conky
+	
+	# Download files
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/.conkyrc -P $HOME
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/get-grid -P $HOME/bin/conky/
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/grid -P $HOME/bin/conky/
+	
+	# Make files executable
+	chmod +x $HOME/bin/conky/*
+	
+	# Add to temp cron file
+	echo "# Start conky at boot" >> $TEMPCRON
+	echo "@reboot sleep 20 && export DISPLAY=:0 && /usr/bin/conky" >> $TEMPCRON
+fi
+
+## Install autohotspot
+clear
+print_header
+cat <<- EOF
+	HOSTAPT and DNSMASQ
+	HOSTAPT and DNSMASQ are used to create a hotspot
+	and dns server on the pi. The hotspot will turn
+	on when no recognized WIFI networks are in range.
+	
+EOF
+
+read -p "Install hostapt and dnsmasq? y/n:" ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+	# Check if running buster
+	BUSTER=$(cat /etc/os-release | grep -i buster)
+	if [ -z "$BUSTER" ]; then
+		rfkill unblock all
+	fi
+	
+	# Install packages
+	sudo apt install -y hostapd dnsmasq
+	
+	# Disable both services
+	sudo systemctl disable hostapd
+	sudo systemctl disable dnsmasq
+	
+	# Prompt for hotspot password
+	prompt_wifipass
+	
+	# Download hostapd configuration file
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/hostapd/hostapd.txt $TEMP_DIR
+
+	# Set new hotspot password
+	sed -i "s/wpa_passphrase=1234567890/wpa_passphrase=$wifipasswd/" $TEMP_DIR/hostapd.txt
+	# Set country to US
+	sed -i 's/country_code=GB/country_code=US/' $TEMP_DIR/hostapd.txt
+
+	# Move hostapd config to correct location
+	sudo mv $TEMP_DIR/hostapd.txt /etc/hostapd/hostapd.conf
+	
+	# Set daemon configuration file
+	sed -i 's/#DAEMON_CONF=""/DAEMON_CONF="\/etc\/hostapd\/hostapd.conf"/' /etc/default/hostapd
+	sed -i 's/DAEMON_OPTS=""/#DAEMON_OPTS=""/' /etc/default/hostapd
+	
+	# Add configuration options to dnsmasq.conf
+	echo "# AutoHotspot config" >> /etc/dnsmasq.conf
+	echo "interface=wlan0" >> /etc/dnsmasq.conf
+	echo "bind-dynamic" >> /etc/dnsmasq.conf
+	echo "server=8.8.8.8" >> /etc/dnsmasq.conf
+	echo "domain-needed" >> /etc/dnsmasq.conf
+	echo "bogus-priv" >> /etc/dnsmasq.conf
+	echo "dhcp-range=192.168.4.100,192.168.4.200,255.255.255.0,12h" >> /etc/dnsmasq.conf
+	echo "" >> /etc/dnsmasq.conf
+	echo "# Set up redirect for email.com" >> /etc/dnsmasq.conf
+	echo "dhcp-option=3,192.168.4.1" >> /etc/dnsmasq.conf
+	echo "address=/email.com/192.168.4.1" >> /etc/dnsmasq.conf
+	
+	# Move interfaces file
+	mv /etc/network/interfaces /etc/network/interfaces.org
+	
+	echo "source-directory /etc/network/interfaces.d" >> /etc/network/interfaces
+
+	# Unhook wpa_supplicant so that it can be handled by the service
+	echo "nohook wpa_supplicant" >> /etc/dhcpcd.conf
+
+	# Setup IP forwarding
+	sed 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+	
+	# Download autohotspot service file
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspot-service.txt $TEMP_DIR
+
+	# Install autohotspot service file
+	sudo mv $TEMP_DIR/autohotspot-service.txt /etc/systemd/system/autohotspot.service
+
+	# Start autohotspot service
+	sudo systemctl enable autohotspot.service
+
+	# Check to see if iw is installed
+	iwcheck=$(dpkg --get-selections | grep -w "iw")
+	if [ -z "iw" ]; then
+		sudo apt install iw
+	fi
+
+	# Install autohotspot script
+	wget http://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/autohotspot/autohotspotN.txt $TEMP_DIR
+	mv autohotspotN.txt /usr/bin/autohotspotN
+	chmod +x /usr/bin/autohotspotN
+fi
+
+## Setup udev rules
+## Install MSCL
+
+## Cleanup temp files
+rm -r $TEMP_DIR
