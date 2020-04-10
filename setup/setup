@@ -451,10 +451,8 @@ rm -r $TEMP_DIR
 clear
 print_header
 cat <<- EOF
-	MSCL
-	The MicroStrain Communication Library is needed
-	for the avionics code to communicate with the
-	IMU.
+	REBOOT
+	It is recommended that you reboot the system now.
 	
 EOF
 
