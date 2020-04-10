@@ -67,7 +67,7 @@ if ![ -d $HOME/bin ]; then
 	mkdir -p $HOME/bin
 fi
 
-if grep -Fq "export PATH=$PATH:$HOME/bin" $HOME/.bashrc; then
+if ! grep -Fq "export PATH=$PATH:$HOME/bin" $HOME/.bashrc; then
 	echo "export PATH=$PATH:$HOME/bin" >> $HOME/.bashrc
 fi
 
@@ -110,7 +110,7 @@ read -n 1 -s -r -p "Press any key to continue"
 touch $HOME/RTC
 
 # Install packages
-sudo apt install python-picamera graphicsmagick python-pip
+sudo apt install -y python-picamera graphicsmagick python-pip
 pip install twython
 
 CONFIG="/boot/config.txt"
@@ -134,7 +134,7 @@ if [ -f "$CONFIG" ]; then
 		sudo sed -i "s/start_x=0/start_x=1/g" $CONFIG
 	else
 		# Create the definition
-		sudo echo "start_x=1" >> $CONFIG
+		echo "start_x=1" | sudo tee $CONFIG
 	fi
 
 	# If a line containing "gpu_mem" exists
@@ -144,7 +144,7 @@ if [ -f "$CONFIG" ]; then
 		sudo sed -i "/gpu_mem/c\gpu_mem=128" $CONFIG
 	else
 		# Create the definition
-		sudo echo "gpu_mem=128" >> $CONFIG
+		echo "gpu_mem=128" | sudo tee $CONFIG
 	fi
 
 	# Enable UART
@@ -157,7 +157,7 @@ if [ -f "$CONFIG" ]; then
 		sudo sed -i "s/enable_uart=0/enable_uart=1" $CONFIG
 	else
 		# Create the definition
-		sudo echo "enable_uart=1" >> $CONFIG
+		echo "enable_uart=1" | sudo tee $CONFIG
 	fi
 
 else
@@ -195,7 +195,7 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo mv $TEMP_DIR/gpsd /etc/default/gpsd
 	
 	# Add refclock to chrony.conf
-	sudo echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" >> /etc/chrony/chrony.conf
+	echo "refclock SHM 0 offset 0.080 delay 0.2 minsamples 64 refid NMEA" | sudo tee /etc/chrony/chrony.conf
 fi
 
 echo
@@ -320,27 +320,29 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 		echo "Autohotspot configuration already added to dnsmasq.conf"
 	else
 		# Add autohotspot configuration
-		sudo echo "# AutoHotspot config" >> /etc/dnsmasq.conf
-		sudo echo "interface=wlan0" >> /etc/dnsmasq.conf
-		sudo echo "bind-dynamic" >> /etc/dnsmasq.conf
-		sudo echo "server=8.8.8.8" >> /etc/dnsmasq.conf
-		sudo echo "domain-needed" >> /etc/dnsmasq.conf
-		sudo echo "bogus-priv" >> /etc/dnsmasq.conf
-		sudo echo "dhcp-range=192.168.4.100,192.168.4.200,255.255.255.0,12h" >> /etc/dnsmasq.conf
-		sudo echo "" >> /etc/dnsmasq.conf
-		sudo echo "# Set up redirect for email.com" >> /etc/dnsmasq.conf
-		sudo echo "dhcp-option=3,192.168.4.1" >> /etc/dnsmasq.conf
-		sudo echo "address=/email.com/192.168.4.1" >> /etc/dnsmasq.conf
+		cat <<- EOF | sudo tee /etc/dnsmasq.conf
+		# AutoHotspot config
+		interface=wlan0
+		bind-dynamic
+		server=8.8.8.8
+		domain-needed
+		bogus-priv
+		dhcp-range=192.168.4.100,192.168.4.200,255.255.255.0,12h
+		
+		# Set up redirect for email.com
+		dhcp-option=3,192.168.4.1
+		address=/email.com/192.168.4.1
+		EOF
 	fi
 	
 	
 	# Move interfaces file
 	sudo mv /etc/network/interfaces /etc/network/interfaces.org
 	
-	sudo echo "source-directory /etc/network/interfaces.d" >> /etc/network/interfaces
+	echo "source-directory /etc/network/interfaces.d" | sudo tee /etc/network/interfaces
 
 	# Unhook wpa_supplicant so that it can be handled by the service
-	sudo echo "nohook wpa_supplicant" >> /etc/dhcpcd.conf
+	echo "nohook wpa_supplicant" | sudo tee /etc/dhcpcd.conf
 
 	# Setup IP forwarding
 	sudo sed 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
