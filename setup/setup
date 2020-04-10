@@ -229,15 +229,18 @@ if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
 	sudo gem install maidenhead
 	
 	# Download files
-	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/.conkyrc -P $TEMP_DIR
+	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/conky.conf -P $TEMP_DIR
 	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/get-grid -P $TEMP_DIR
 	wget https://raw.githubusercontent.com/RussBabb/rocket2020/master/setup/conky/grid -P $TEMP_DIR
+	
+	# Make conky config directory
+	mkdir -p $HOME/.config/conky
 	
 	# Make conky directory in ~/bin
 	mkdir -p $HOME/bin/conky
 	
 	# Move files to correct locations
-	mv $TEMP_DIR/.conkyrc $HOME/.conkyrc
+	mv $TEMP_DIR/conky.conf $HOME/.config/conky/conky.conf
 	mv $TEMP_DIR/get-grid $HOME/bin/conky/get-grid
 	mv $TEMP_DIR/grid $HOME/bin/conky/grid
 	
