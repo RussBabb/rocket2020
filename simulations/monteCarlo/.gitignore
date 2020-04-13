@@ -1,0 +1,11 @@
+#Ignore MATLAB .asv files
+*.asv
+
+#Ignore the SIMS directory
+sims/
+
+#Ignore any log files
+*.log
+
+#Ignore Excel temp files
+~$*
