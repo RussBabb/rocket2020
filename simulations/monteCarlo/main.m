@@ -32,22 +32,19 @@ savefigs = 0;
 [simpar, simpar_ref] = createSimParams(paramFile);
 simpar.savedir = saveDir;
 
-simpar.general.processAltimeter = 0;
-simpar.general.processAirspeed = 0;
-
 %% Check mapping equations
 if checkMapping
-    x = [20, 20, 20, 100, 100, 100, 0, 0, 0, 0, 0.00, 0.00, 0.00, 15.0, 0.005, 0.005, 0.005, 0.00005, 0.00005, 0.00005, 10, 3, 0.01, 0.01, 0.01]';
+    x = [20, 20, 20, 100, 100, 100, 0, 0, 0, 0, 0.00, 0.00, 0.00, 15.0,...
+        0.005, 0.005, 0.005, 0.00005, 0.00005, 0.00005, 10, 3, 0.01, 0.01, 0.01]';
     x(7:10) = normalizeQuat([1, 1, 1, 1]');
     checkErrorDefConsistency(simpar, x);
 end
 
 %% Check propagation and nonlinear measurement modeling
 if checkProp
-    simpar_ref.general.processRangeEnable = 0;
-    simpar_ref.general.processDopplerEnable = 0;
-    simpar_ref.general.processSCEnable = 0;
-    simpar_ref.general.processTCEnable = 0;
+    simpar_ref.general.processAltimeter = 0;
+    simpar_ref.general.processAirspeed = 0;
+    
     traj_propcheck = runSim_gpsIns(simpar_ref,1,1);
     savefile.traj_propcheck = traj_propcheck;
     h_figs_prop_check = plotNavPropErrors_gpsins(traj_propcheck);
@@ -64,6 +61,9 @@ end
 
 %% Run Single Simulation
 if runSingleSim
+    simpar.general.processAltimeter = 0;
+    simpar.general.processAirspeed = 0;
+    
     traj_single_sim = runSim(simpar, true, 1);
     savefile.traj_single_sim = traj_single_sim;
     
@@ -87,6 +87,9 @@ end
 
 %% Run Monte Carlo
 if runMonteCarlo
+    simpar.general.processAltimeter = 0;
+    simpar.general.processAirspeed = 0;
+
     % Preallocated error buffer to enable parallel processing
     data = readFlightSim(simpar.general.flightSimFilename);
     nstep = simpar.general.tsim/simpar.general.dt + 1;
