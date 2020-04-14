@@ -25,7 +25,7 @@ w_wind = u(15:17);
 tau_accel = simpar.general.tau_accel;
 tau_gyro = simpar.general.tau_gyro;
 tau_alt = simpar.general.tau_alt;
-tau_vel = simpar.general.tau_vel;
+tau_air = simpar.general.tau_air;
 tau_wind = simpar.general.tau_wind;
 
 %Extract constants
@@ -61,7 +61,7 @@ F_thrust = calcThrust(t, simpar.satellite, P_atm);
 
 % Calculate the body to inertial rotation matrix and gravity magnitude
 R_b2f = q2dcm(q_b2f);
-g = calcGrav(h);
+g = [0; 0; calcGrav(h)];
 
 % Precalculate the last portion of the wdot equation
 % Iw = [(I_b(2,2) - I_b(3,3))*w_b(2)*w_b(3) + I_b(1,3)*w_b(1)*w_b(2);
@@ -80,7 +80,7 @@ M_b = [0;
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b + v_wind_f;
-vdot_b = F_b/m + g*R_b2f(3,1:3)' - cross(w_b, v_b) + n_nu;
+vdot_b = F_b/m + R_b2f'*g - cross(w_b, v_b) + n_nu;
 qdot_b2f = qmult(0.5*q_b2f, [0; w_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 wdot_b = I_b\(M_b + cross(w_b, I_b*w_b)) + n_omega;
 
@@ -89,7 +89,7 @@ mdot = -F_thrust/(g_0*I_sp);
 bdot_accel = -b_accel/tau_accel + w_accel;
 bdot_gyro = -b_gyro/tau_gyro + w_gyro;
 bdot_alt = 0;
-bdot_vel = 0;
+bdot_air = 0;
 
 vdot_wind_f = -v_wind_f/tau_wind + w_wind;
 
@@ -103,7 +103,7 @@ xdot = [
     bdot_accel;
     bdot_gyro;
     bdot_alt;
-    bdot_vel;
+    bdot_air;
     vdot_wind_f;
     ];
 end
