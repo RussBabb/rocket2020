@@ -1,55 +1,52 @@
 function xhat_dot = diffeq_navState(xhat,t,ytilde,~,simpar)
 % Unpack states
-rhat_i = xhat(1:3);
-vhat_i = xhat(4:6);
-qhat_b2i = xhat(7:10);
-b_accel = x(11:13);
+rhat_f = xhat(1:3);
+vhat_b = xhat(4:6);
+qhat_b2f = xhat(7:10);
+bhat_accel = xhat(11:13);
 bhat_gyro = xhat(14:16);
+bhat_alt = xhat(17);
+bhat_air = xhat(18);
 
 %Unpack the inputs
-wtilde_b = ytilde(1:3);
-% Rhat_b2i = q2dcm(q_b2i);
+nutilde_b = ytilde(1:3);
+wtilde_b = ytilde(4:6);
 
-% tau_accel = simpar.general.tau_accel;
+tau_accel = simpar.general.tau_accel;
 tau_gyro = simpar.general.tau_gyro;
-tau_range = simpar.general.tau_range;
-tau_doppler = simpar.general.tau_doppler;
-tau_grav = simpar.general.tau_grav;
-tau_sc = simpar.general.tau_sc;
-tau_tc = simpar.general.tau_tc;
+tau_alt = simpar.general.tau_alt;
+tau_air = simpar.general.tau_air;
 
-MU = simpar.general.MU;
-J2 = simpar.general.J2;
-R_EQ = simpar.general.R_EQ;
-T_I2LF = calc_I2LCF(t, simpar);
+%Calculate dependent parameters
+h = -r_f(3);
 
-%Compute xhat_dot
-rhatdot_i = vhat_i;
-vhatdot_i = calc_g(rhat_i, [0, 0, 1]', R_EQ, J2, MU) - bhat_grav;
-% vhatdot_i = T_I2LF'*get_grav_vec(T_I2LF*rhat_i);
-qhatdot_b2i = qmult(0.5*qhat_b2i, [0; wtilde_b - bhat_gyro]);
-rhatdot_beacon = zeros(3,1);
-% bhatdot_accel = 
-bhatdot_gyro = -bhat_gyro/tau_gyro;
-bhatdot_range = -bhat_range/tau_range;
-bhatdot_doppler = -bhat_doppler/tau_doppler;
-bhatdot_grav = -bhat_grav/tau_grav;
-thatdot_sc = -that_sc/tau_sc;
-thatdot_tc = -that_tc/tau_tc;
-rhatdot_features = zeros(length(rhat_features),1);
+% Calculate the body to inertial rotation matrix and gravity magnitude
+Rhat_b2f = q2dcm(qhat_b2f);
+g = [0; 0; calcGrav(h)];
 
-%
+% Precalculate the last portion of the wdot equation
+% Iw = [(I_b(2,2) - I_b(3,3))*w_b(2)*w_b(3) + I_b(1,3)*w_b(1)*w_b(2);
+%     (I_b(3,3) - I_b(1,1))*w_b(1)*w_b(3) + I_b(1,3)*(w_b(3)^2 - w_b(1)^2);
+%     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
+
+% Evaluate differential equations
+rhatdot_f = Rhat_b2f*vhat_b;
+vhatdot_b = nutilde_b + Rhat_b2f'*g - cross(wtilde_b, v_b);
+qhatdot_b2f = qmult(0.5*qhat_b2f, [0; wtilde_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
+
+bhatdot_accel = -b_accel/tau_accel;
+bhatdot_gyro = -b_gyro/tau_gyro;
+bhatdot_alt = 0;
+bhatdot_air = 0;
+
+% Package states
 xhat_dot = [
-    rhatdot_i;
-    vhatdot_i;
-    qhatdot_b2i;
-    rhatdot_beacon;
+    rhatdot_f;
+    vhatdot_b;
+    qhatdot_b2f;
+    bhatdot_accel;
     bhatdot_gyro;
-    bhatdot_range;
-    bhatdot_doppler;
-    bhatdot_grav;
-    thatdot_sc;
-    thatdot_tc;
-    rhatdot_features
+    bhatdot_alt;
+    bhatdot_air;
     ];
 end
