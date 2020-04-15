@@ -3,12 +3,12 @@ A_wet = stage.A_wet;
 A_ref = stage.A_ref;
 l_ref = stage.l_ref;
 
-A_surf = stage.fins.A_surf;
-W = stage.fins.W;
-t = stage.fins.t;
-AR = stage.fins.AR;
-theta_LE = stage.fins.theta_LE;
-N_fins = stage.fins.N;
+A_surf = stage.fin_A_surf;
+W = stage.fin_W;
+t = stage.fin_t;
+AR = stage.fin_AR;
+theta_LE = stage.fin_theta_LE;
+N_fins = stage.N_fins;
 
 k = stage.k;
 d = stage.tail.d;
