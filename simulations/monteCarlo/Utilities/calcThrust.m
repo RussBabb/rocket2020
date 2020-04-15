@@ -1,19 +1,18 @@
 %% Define the Thrust function
-%  Input: Massflow in, Massflow out, Exit pressure, Ambient pressure, Exit
-%  area, Exit mach number, Incoming velocity, gamma, Rg, Exit temp
-%  Output: Thrust (N), Specific impulse (seconds)
+%  Input: time (sec), stage properties, ambient pressure (kPa)
+%  Output: Thrust (N)
 function F_thrust = calcThrust(t, stage, P_amb)
 motor = stage.motor;
 A_e = stage.A_e;
 P_sea = 101.300;
 
-if isa(motor, 'double')
-    F_thrust = Interpolate_Thrust(t, motor);
-    
+if motor = "commercial"
+    F_thrust = interpProfile(t);
 elseif motor == "hybrid"
     F_thrust = stage.F_thrust;
 end
 
+% Apply altitude adjustment
 if F_thrust > 0
     F_thrust = F_thrust + (P_sea - P_amb)*1000*A_e;
 end

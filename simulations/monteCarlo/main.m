@@ -3,12 +3,13 @@ close all
 clc
 totalTimeId = tic;
 
-addpath('Utilities')
+addpath('Utilities', 'Rocket Profiles')
 
 %Load resources
-global stdAtm extStdAtmAvg extStdAtmMax extStdAtmMin
+global stdAtm extStdAtmAvg extStdAtmMax extStdAtmMin motorProfile
 load("StandardAtmosphere")
 load("ExtendedAtmosphere")
+load("Ces_M2150")
 
 %% Setup paths and matlab file object for saving data
 saveName = ['sim_', datestr(datetime('now'), 'yyyy_mm_dd_HH_MM_ss')];
@@ -23,7 +24,7 @@ savefile.filename = saveName;
 
 %% Read in the simulation parameters
 %Define the simparams
-checkMapping = 1;
+checkMapping = 0;
 checkProp = 0;
 runSingleSim = 0;
 runMonteCarlo = 0;
@@ -31,6 +32,11 @@ savefigs = 0;
 
 [simpar, simpar_ref] = createSimParams(paramFile);
 simpar.savedir = saveDir;
+
+%% Setup Inertia Tensor
+simpar.rocket.I_b = [simpar.rocket.I_xx, simpar.rocket.I_xy, simpar.rocket.I_xz;
+    simpar.rocket.I_xy, simpar.rocket.I_yy, simpar.rocket.I_yz;
+    simpar.rocket.I_xz, simpar.rocket.I_yz, simpar.rocket.I_zz];
 
 %% Check mapping equations
 if checkMapping
@@ -47,7 +53,7 @@ if checkProp
     
     traj_propcheck = runSim_gpsIns(simpar_ref,1,1);
     savefile.traj_propcheck = traj_propcheck;
-    h_figs_prop_check = plotNavPropErrors_gpsins(traj_propcheck);
+    h_figs_prop_check = plotNavPropErrors(traj_propcheck);
     if savefigs
         for i = 1:length(h_figs_prop_check)
             figfilename = sprintf('checkProp_%d',i);
