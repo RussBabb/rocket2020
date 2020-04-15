@@ -14,7 +14,6 @@ v_wind_f = x(23:25);
 % Unpack inputs
 n_nu = u(1:3);
 n_omega = u(4:6);
-% omegatilde_b = u(4:6);
 w_accel = u(7:9);
 w_gyro  = u(10:12);
 w_alt = u(13);
@@ -56,10 +55,10 @@ beta = atan2(v_b(2)/v_b(1));
 vmag = norm(v_b);
 qbar = 0.5*rho*vmag^2;
 
-C_D = calcCD(vmag, simpar.satellite, rho_atm, c_atm, mu_atm);
-F_thrust = calcThrust(t, simpar.satellite, P_atm);
+C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
+F_thrust = calcThrust(t, simpar.rocket, P_atm);
 
-% Calculate the body to inertial rotation matrix and gravity magnitude
+% Calculate the body to earth fixed rotation matrix and gravity magnitude
 R_b2f = q2dcm(q_b2f);
 g = [0; 0; calcGrav(h)];
 
@@ -69,9 +68,9 @@ g = [0; 0; calcGrav(h)];
 %     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
 
 % Calculate body forces
-F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) - C_D*cos(alpha))*cos(beta);
+F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) - C_D*cos(alpha))*cos(beta); %7.6.23 of Phillips does not include cos(beta)
     qbar*A_ref*(C_D*sin(beta) - C_L*cos(beta));
-    qbar*A_ref*(C_D*sin(alpha) - C_L*cos(alpha))];
+    qbar*A_ref*(-C_L*cos(alpha) - C_D*sin(alpha))];
 
 % Calculate body moments
 M_b = [0;
