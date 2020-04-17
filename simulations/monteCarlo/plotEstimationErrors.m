@@ -1,9 +1,9 @@
-function h_figs = plotEstimationErrors_gpsins(traj)
+function h_figs = plotEstimationErrors(traj)
 %PLOTESTIMATIONERRORS_GPSINS plots residuals and estimation errors for a
 %GPS/INS
 
 % Extract true states, nav states, and covariances
-trueState = traj.truthState;
+truthState = traj.truthState;
 navState = traj.navState;
 navCov = traj.navCov;
 h_figs = [];
@@ -13,16 +13,16 @@ traj.time_nav = traj.time_nav/3600;
 
 %Plot trajectory
 h_figs(end+1) = figure;
-plot3(trueState(1,:)',...
-    trueState(2,:)',...
-    trueState(3,:)');
+plot3(truthState(2,:)',...
+    truthState(1,:)',...
+    -truthState(3,:)');
 hold on
 plot3(navState(1,:)',...
     navState(2,:)',...
-    navState(3,:)');
-xlabel('X (m)')
-ylabel('Y (m)')
-zlabel('Z (m)')
+    -navState(3,:)');
+xlabel('East (m)')
+ylabel('North (m)')
+zlabel('Altitude (m)')
 legend('Truth Trajectory', 'Navigation Estimate')
 title('Trajectory Propagation')
 grid on;
@@ -103,7 +103,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=1:3
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, [navState(i,:)', trueState(i,:)']); hold on
+    stairs(traj.time_nav, [navState(i,:)', truthState(i,:)']); hold on
     stairs(traj.time_nav, navState(i,:)' + 3.*sqrt(squeeze(navCov(i,i,:))),'r--');
     stairs(traj.time_nav, navState(i,:)' - 3.*sqrt(squeeze(navCov(i,i,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -117,7 +117,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=1:3
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, navState(i,:)' - trueState(i,:)'); hold on
+    stairs(traj.time_nav, navState(i,:)' - truthState(i,:)'); hold on
     stairs(traj.time_nav, 3.*sqrt(squeeze(navCov(i,i,:))),'r--');
     stairs(traj.time_nav,-3.*sqrt(squeeze(navCov(i,i,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -131,7 +131,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=4:6
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,[navState(i,:)',trueState(i,:)']); hold on
+    stairs(traj.time_nav,[navState(i,:)',truthState(i,:)']); hold on
     stairs(traj.time_nav,navState(i,:)' + 3.*sqrt(squeeze(navCov(i,i,:))),'r--');
     stairs(traj.time_nav,navState(i,:)' - 3.*sqrt(squeeze(navCov(i,i,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -145,7 +145,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=4:6
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,navState(i,:)' - trueState(i,:)'); hold on
+    stairs(traj.time_nav,navState(i,:)' - truthState(i,:)'); hold on
     stairs(traj.time_nav, 3.*sqrt(squeeze(navCov(i,i,:))),'r--');
     stairs(traj.time_nav,-3.*sqrt(squeeze(navCov(i,i,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -155,7 +155,7 @@ for i=4:6
     grid on;
 end
 
-[trueState_LVLH, ~] = convertStateI2LVLH(trueState, navCov);
+[trueState_LVLH, ~] = convertStateI2LVLH(truthState, navCov);
 [navState_LVLH, navCov_LVLH] = convertStateI2LVLH(navState, navCov);
 
 %LVLH Satellite Position estimates
@@ -189,7 +189,7 @@ end
 %Satellite Attitude errors
 axis_str = {'X','Y','Z'};
 [ rotVector, ~] = calcAttitudeError(navState(7:10,:),...
-    trueState(7:10,:));
+    truthState(7:10,:));
 for i=7:9
     h_figs(end+1) = figure;
     stairs(traj.time_nav,rotVector(i-6,:)); hold on
@@ -206,7 +206,7 @@ end
 axis_str = {'X_l','Y_l','Z_l'};
 for i=11:13
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, [navState(i,:)', trueState(i+3,:)']); hold on
+    stairs(traj.time_nav, [navState(i,:)', truthState(i+3,:)']); hold on
     stairs(traj.time_nav, navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav, navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -220,7 +220,7 @@ end
 axis_str = {'X_l','Y_l','Z_l'};
 for i=11:13
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, navState(i,:)' - trueState(i+3,:)'); hold on
+    stairs(traj.time_nav, navState(i,:)' - truthState(i+3,:)'); hold on
     stairs(traj.time_nav, 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,-3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -248,7 +248,7 @@ end
 axis_str = {'X_b','Y_b','Z_b'};
 for i=14:16
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,[navState(i,:)',trueState(i+3,:)']); hold on
+    stairs(traj.time_nav,[navState(i,:)',truthState(i+3,:)']); hold on
     stairs(traj.time_nav,navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -260,7 +260,7 @@ end
 
 %Range Bias Estimate
 h_figs(end+1) = figure;
-stairs(traj.time_nav,[navState(17,:)',trueState(20,:)']); hold on
+stairs(traj.time_nav,[navState(17,:)',truthState(20,:)']); hold on
 stairs(traj.time_nav,navState(17,:)' + 3.*sqrt(squeeze(navCov(16,16,:))),'r--');
 stairs(traj.time_nav,navState(17,:)' - 3.*sqrt(squeeze(navCov(16,16,:))),'r--'); hold off
 xlabel('Time  (hours)')
@@ -270,7 +270,7 @@ grid on;
 
 %Doppler Bias Estimate
 h_figs(end+1) = figure;
-stairs(traj.time_nav,[navState(18,:)',trueState(21,:)']); hold on
+stairs(traj.time_nav,[navState(18,:)',truthState(21,:)']); hold on
 stairs(traj.time_nav,navState(18,:)' + 3.*sqrt(squeeze(navCov(17,17,:))),'r--');
 stairs(traj.time_nav,navState(18,:)' - 3.*sqrt(squeeze(navCov(17,17,:))),'r--'); hold off
 xlabel('Time  (hours)')
@@ -282,7 +282,7 @@ grid on;
 axis_str = {'X','Y','Z'};
 for i=19:21
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,[navState(i,:)',trueState(i+3,:)']); hold on
+    stairs(traj.time_nav,[navState(i,:)',truthState(i+3,:)']); hold on
     stairs(traj.time_nav,navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -296,7 +296,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=22:24
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,[navState(i,:)',trueState(i+3,:)']); hold on
+    stairs(traj.time_nav,[navState(i,:)',truthState(i+3,:)']); hold on
     stairs(traj.time_nav,navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -310,7 +310,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=25:27
     h_figs(end+1) = figure;
-    stairs(traj.time_nav,[navState(i,:)',trueState(i+3,:)']); hold on
+    stairs(traj.time_nav,[navState(i,:)',truthState(i+3,:)']); hold on
     stairs(traj.time_nav,navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -324,7 +324,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=28:30
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, [navState(i,:)', trueState(i+3,:)']); hold on
+    stairs(traj.time_nav, [navState(i,:)', truthState(i+3,:)']); hold on
     stairs(traj.time_nav, navState(i,:)' + 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav, navState(i,:)' - 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
@@ -338,7 +338,7 @@ end
 axis_str = {'X','Y','Z'};
 for i=28:30
     h_figs(end+1) = figure;
-    stairs(traj.time_nav, navState(i,:)' - trueState(i+3,:)'); hold on
+    stairs(traj.time_nav, navState(i,:)' - truthState(i+3,:)'); hold on
     stairs(traj.time_nav, 3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--');
     stairs(traj.time_nav,-3.*sqrt(squeeze(navCov(i-1,i-1,:))),'r--'); hold off
     xlabel('Time  (hours)')
