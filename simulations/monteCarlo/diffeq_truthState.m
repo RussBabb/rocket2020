@@ -8,7 +8,7 @@ m = x(14);
 b_accel = x(15:17);
 b_gyro = x(18:20);
 b_alt = x(21);
-b_vel = x(22);
+b_air = x(22);
 v_wind_f = x(23:25);
 
 % Unpack inputs
@@ -38,8 +38,10 @@ g_0 = simpar.constants.g_0;
 A_ref = simpar.rocket.A_ref;
 c_ref = simpar.rocket.c_ref;
 x_cp = simpar.rocket.x_cp;
-x_cg = simpar.rocket.x_cg;
-C_L = simpar.rocket.C_L;
+x_cg = simpar.rocket.x_cg_b;
+C_L_0 = simpar.rocket.C_L_0;
+C_L_alpha = simpar.rocket.C_L_alpha;
+C_L_beta = simpar.rocket.C_L_beta;
 % C_D = simpar.rocket.C_D;
 % C_m = simpar.rocket.C_m;
 I_b = simpar.rocket.I_b;
@@ -49,18 +51,20 @@ I_sp = simpar.rocket.I_sp;
 
 %Calculate dependent parameters
 h = -r_f(3);
-[~, P_atm, rho_atm, c_atm, mu_atm] = getStdAtmProps(h/1000, "avg");
+[~, P_atm, rho_atm, c_atm, mu_atm] = getStdAtmProps(h/1000);
 alpha = atan2(v_b(3), v_b(1));
-beta = atan2(v_b(2)/v_b(1));
+beta = atan2(v_b(2), v_b(1));
 vmag = norm(v_b);
-qbar = 0.5*rho*vmag^2;
+qbar = 0.5*rho_atm*vmag^2;
 
+C_L_a = C_L_0 + C_L_alpha*alpha;
+C_L_b = C_L_0 + C_L_beta*beta;
 C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
 F_thrust = calcThrust(t, simpar.rocket, P_atm);
 
 % Calculate the body to earth fixed rotation matrix and gravity magnitude
 R_b2f = q2dcm(q_b2f);
-g = [0; 0; calcGrav(h)];
+g = [0; 0; calcGrav(h, simpar.init.lat)];
 
 % Precalculate the last portion of the wdot equation
 % Iw = [(I_b(2,2) - I_b(3,3))*w_b(2)*w_b(3) + I_b(1,3)*w_b(1)*w_b(2);
@@ -68,14 +72,14 @@ g = [0; 0; calcGrav(h)];
 %     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
 
 % Calculate body forces
-F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) - C_D*cos(alpha))*cos(beta); %7.6.23 of Phillips does not include cos(beta)
-    qbar*A_ref*(C_D*sin(beta) - C_L*cos(beta));
-    qbar*A_ref*(-C_L*cos(alpha) - C_D*sin(alpha))];
+F_b = [F_thrust + qbar*A_ref*((C_L_a + C_L_b)*sin(alpha) - C_D*cos(alpha))*cos(beta); %7.6.23 of Phillips does not include cos(beta)
+    qbar*A_ref*(C_D*sin(beta) - C_L_b*cos(beta));
+    qbar*A_ref*(-C_L_a*cos(alpha) - C_D*sin(alpha))];
 
 % Calculate body moments
 M_b = [0;
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L*cos(alpha) + C_D*sin(alpha));
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L*cos(beta) + C_D*sin(beta))];
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_a*cos(alpha) + C_D*sin(alpha));
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_b*cos(beta) + C_D*sin(beta))];
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b + v_wind_f;

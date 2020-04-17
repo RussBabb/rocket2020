@@ -18,11 +18,11 @@ tau_alt = simpar.general.tau_alt;
 tau_air = simpar.general.tau_air;
 
 %Calculate dependent parameters
-h = -r_f(3);
+h = -rhat_f(3);
 
 % Calculate the body to earth fixed rotation matrix and gravity magnitude
 Rhat_b2f = q2dcm(qhat_b2f);
-g = [0; 0; calcGrav(h)];
+g = [0; 0; calcGrav(h, simpar.init.lat)];
 
 % Precalculate the last portion of the wdot equation
 % Iw = [(I_b(2,2) - I_b(3,3))*w_b(2)*w_b(3) + I_b(1,3)*w_b(1)*w_b(2);
@@ -31,11 +31,11 @@ g = [0; 0; calcGrav(h)];
 
 % Evaluate differential equations
 rhatdot_f = Rhat_b2f*vhat_b;
-vhatdot_b = nutilde_b + Rhat_b2f'*g - cross(omegatilde_b, v_b);
+vhatdot_b = nutilde_b + Rhat_b2f'*g;% - cross(omegatilde_b, vhat_b);
 qhatdot_b2f = qmult(0.5*qhat_b2f, [0; omegatilde_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 
-bhatdot_accel = -b_accel/tau_accel;
-bhatdot_gyro = -b_gyro/tau_gyro;
+bhatdot_accel = -bhat_accel/tau_accel;
+bhatdot_gyro = -bhat_gyro/tau_gyro;
 bhatdot_alt = 0;
 bhatdot_air = 0;
 

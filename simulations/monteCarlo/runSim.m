@@ -69,6 +69,7 @@ N_navStates = simpar.general.n_nav;
 R_alt = simpar.nav.params.sig_meas_alt^2;
 R_air = simpar.nav.params.sig_meas_air^2;
 
+l_rail = simpar.init.l_rail;
 %*********************** End of Misc Calcs *******************************
 
 %************************ Initialization *********************************
@@ -89,11 +90,15 @@ delx_buff   = zeros(N_navStates-1,nstep);
 %to pre-defined values. The initial sensor biases are set to random values.
 x_buff(1:3,1) = [simpar.truth.ic.sig_rx * randn;
     simpar.truth.ic.sig_ry * randn;
-    simpar.truth.ic.sig_rz * randn];
+    simpar.truth.ic.sig_rz * randn - simpar.init.alt];
 x_buff(4:6,1) = [0; 0; 0];
-x_buff(7:10,1) = dcm2q(calc_I2B(r_sinit,v_sinit));
+theta = simpar.init.elevation;
+phi = simpar.init.azimuth;
+R_ele = [cos(theta), 0, sin(theta); 0, 1, 0; -sin(theta), 0, cos(theta)];
+R_azi = [cos(phi), -sin(phi), 0; sin(phi), cos(phi), 0; 0, 0, 1];
+x_buff(7:10,1) = dcm2q(R_azi*R_ele);
 x_buff(11:13,1) = [0; 0; 0];
-x_buff(14,1) = simpar.init.mass;
+x_buff(14,1) = simpar.rocket.m_total;
 x_buff(15:17,1) = [simpar.truth.ic.sig_accelx * randn;
     simpar.truth.ic.sig_accely * randn;
     simpar.truth.ic.sig_accelz * randn];
@@ -102,12 +107,12 @@ x_buff(18:20,1) = [simpar.truth.ic.sig_gyrox * randn;
     simpar.truth.ic.sig_gyroz * randn];
 x_buff(21,1) = simpar.truth.ic.sig_alt*randn;
 x_buff(22,1) = simpar.truth.ic.sig_air*randn;
-x_buff(23:25,1) = [simpar.truth.ic.sig_thscx * randn;
-    simpar.truth.ic.sig_thscy * randn;
-    simpar.truth.ic.sig_thscz * randn];
+x_buff(23:25,1) = [simpar.truth.ic.sig_wind * randn;
+    simpar.truth.ic.sig_wind * randn;
+    simpar.truth.ic.sig_wind * randn];
 
 %Initialize the navigation state vector
-x_hat_buff(1:3,1) = [0; 0; 0];
+x_hat_buff(1:3,1) = [0; 0; -simpar.init.alt];
 x_hat_buff(4:6,1) = [0; 0; 0];
 % delta_q_vec = [0.5*simpar.truth.ic.sig_thx*randn;
 %     0.5*simpar.truth.ic.sig_thx*randn;
@@ -149,7 +154,7 @@ P_hat_buff(:,:,1) = diag([
     ]);
 
 %Initialize inertial measurements
-ytilde_buff(:,1) = contInertialMeas(x_buff(4:6,1), x_buff(11:13,1), ...
+ytilde_buff(:,1) = contInertialMeas([0; 0; 0], x_buff(11:13,1), ...
     x_buff(15:17,1), x_buff(18:20,1), ...
     n_nu(:,1), n_omega(:,1));
 
@@ -161,39 +166,33 @@ k = 1;
 
 for i=2:nstep
     %Propagate the truth states
-    [x_buff(:,i), dx_true] = rk4('truthState_de',...
-        x_buff(:,i-1),...
-        t(i),...
-        0,...
-        u_truth(:,i),...
-        simpar);
+    if norm(x_buff(1:3,i-1) - x_buff(1:3,1)) <= l_rail
+        diffeq_truth = 'diffeq_truthState_rail';
+    else
+        diffeq_truth = 'diffeq_truthState';
+    end
+    
+    [x_buff(:,i), dx_true] = rk4(diffeq_truth, x_buff(:,i-1), t(i), 0, ...
+        u_truth(:,i), simpar);
     
     %Create sensor data at tk
-    ytilde_buff(:,i) = contInertialMeas(x_buff(4:6,i), x_buff(11:13,i), ...
-        x_buff(15:17,i), x_buff(18:20,i), ...
-        n_nu(:,i), n_omega(:,i));
+    ytilde_buff(:,i) = contInertialMeas(dx_true(4:6) - q2dcm(x_buff(7:10,i))'*[0; 0; calcGrav(-x_buff(3,i), simpar.init.lat)], x_buff(11:13,i), ...
+        x_buff(15:17,i), x_buff(18:20,i), n_nu(:,i), n_omega(:,i));
     
     %Propagate the state estimate and covariance from tk-1 to tk using 
     %sensor data from tk-1
-    [x_hat_buff(:,i), dx_nav] = rk4('navState_de',...
-        x_hat_buff(:,i-1),...
-        t(i),...
-        ytilde_buff(:,i),...
-        0,...
-        simpar);
-    P_hat_buff(:,:,i) = rk4('navCov_de',...
-        P_hat_buff(:,:,i-1),...
-        t(i),...
-        ytilde_buff(:,i),...
-        x_hat_buff(:,i-1),...
-        simpar);
+    [x_hat_buff(:,i), dx_nav] = rk4('diffeq_navState', x_hat_buff(:,i-1),...
+        t(i), ytilde_buff(:,i), 0, simpar);
+%     P_hat_buff(:,:,i) = rk4('diffeq_navCov',...
+%         P_hat_buff(:,:,i-1),...
+%         t(i),...
+%         ytilde_buff(:,i),...
+%         x_hat_buff(:,i-1),...
+%         simpar);
 %     phi = calc_PHI(x_hat_buff(:,i-1), ytilde_buff(:,i), simpar);
 %     B = calc_Bhat(x_hat_buff(:,i-1));
 %     Q = calc_Shat_w(simpar);
 %     P_hat_buff(:,:,i) = phi*P_hat_buff(:,:,i-1)*phi' + B*Q*B'*simpar.general.dt;
-    %Calculate the difference in gravitational acceleration between truth
-    %and nav
-    x_buff(22:24,i) = dx_nav(4:6,1) - dx_true(4:6,1);
     
     %Propagate the error state from tk-1 to tk if testing flag is enabled
     if simpar.general.errorPropTestEnable
@@ -216,103 +215,26 @@ for i=2:nstep
         end
         k = k + 1;
         
-        T_LF2I = calc_I2LCF(t(i), simpar)';
+        %Process the altimeter measurement
+        [z_tilde_alt, zhat_tilde_alt, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_alt(k), t(i), 'altimeter', simpar);
+        res_alt(k) = z_tilde_alt - zhat_tilde_alt;
         
-        rho = x_buff(1:3,i) - T_LF2I*x_buff(14:16,i);
-        ele = pi/2 - acos(dot(rho, T_LF2I*x_buff(14:16,i))/(norm(rho)*norm(x_buff(14:16,i))));
-        if ele > deg2rad(0) %Check to make sure that satellite is in sight of beacon
-            %Process the doppler measurement
-            [z_tilde_doppler, zhat_tilde_doppler, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_air(k), t(i), 'doppler', simpar);
-            res_air(k) = z_tilde_doppler - zhat_tilde_doppler;
-             
-            [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_air(k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_air, res_air(k), simpar.general.processDopplerEnable);
-            
-            %Process the range measurement
-            [z_tilde_range, zhat_tilde_range, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_alt(k), t(i), 'range', simpar);
-            res_alt(k) = z_tilde_range - zhat_tilde_range;
-            
-            [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_alt(k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_alt, res_alt(k), simpar.general.processRangeEnable);
-            
-            if simpar.general.measPertCheckEnable
-                reslin_range = H*delx;
-                disp(res_alt(k) - reslin_range)
-                
-                reslin_doppler = H*delx;
-                disp(res_air(k) - reslin_doppler)
-            end
-        else
-            res_alt(k) = 0;
-            res_air(k) = 0;
-        end
+        [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_alt(k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_alt, res_alt(k), simpar.general.processAltimeter);
         
-        %Process the star camera orientation measurement
-        [z_tilde_b2i, zhat_tilde_b2i, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_sc(:,k), t(i), 'sc', simpar);
-        dq = qmult(z_tilde_b2i, qConjugate(zhat_tilde_b2i));
-        res_b2i(1:3,k) = 2*dq(2:4);
+        %Process the airspeed measurement
+        [z_tilde_air, zhat_tilde_air, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_air(k), t(i), 'airspeed', simpar);
+        res_air(k) = z_tilde_air - zhat_tilde_air;
         
-        [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_b2i(:,:,k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_sc, res_b2i(:,k), simpar.general.processSCEnable);
+        [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_air(k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_air, res_air(k), simpar.general.processAirspeed);
         
         if simpar.general.measPertCheckEnable
-            reslin_b2i = H*delx;
-            disp(res_b2i(:,k) - reslin_b2i)
+            reslin_alt = H*delx;
+            disp(res_alt(k) - reslin_alt)
+            
+            reslin_air = H*delx;
+            disp(res_air(k) - reslin_air)
         end
-        
-        l = T_LF2I*x_buff(31:33,i) - x_buff(1:3,i);
-        alpha = acos(dot(l, -x_buff(1:3,i))/(norm(l)*norm(x_buff(1:3,i))));
-        if alpha < deg2rad(30) && norm(l) < distLimTC %Check to make sure that feature is in camera view
-            %Create feature along boresight of camera
-            if 0
-                T_i2b = q2dcm(x_buff(7:10,i))';
-                T_b2c = eye(3);
-                T_i2c = T_b2c * T_i2b;
-                u_zc_i = T_i2c(3,:)';
-                r_f_i = x_buff(1:3,i) + 100*u_zc_i;
-                x_buff(31:33,i) = T_LF2I' * r_f_i;
-                x_hat_buff(28:30,i) = x_buff(31:33,i);
-            end
-            %Inject errors
-            if simpar.general.measPertCheckEnable
-                fnames = fieldnames(simpar.errorInjection);
-                delx = zeros(length(fnames), 1);
-                for j=1:length(fnames)
-                    delx(j,1) = simpar.errorInjection.(fnames{j});
-                end
-                x_hat_buff(:,i) = injectErrors(x_buff(:,i), delx);
-            end
-
-            
-            %Process the terrain camera line of sight measurements
-            [z_tilde_los, zhat_tilde_los, H] = calcMeasurement(x_buff(:,i), x_hat_buff(:,i), nu_tc(:,k), t(i), 'tc', simpar);
-            res_los(1:2,k) = z_tilde_los - zhat_tilde_los;
-            
-            [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_los(:,:,k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_tc, res_los(:,k), simpar.general.processTCEnable);
-            
-            %Test residuals
-            if simpar.general.measPertCheckEnable
-                delz_nl = res_los(1:2,k);
-                delz_l = H*delx;
-                measLinTable.delz_nl = delz_nl;
-                measLinTable.delz_l = delz_l;
-                measLinTable.difference = delz_nl - delz_l;
-                disp(struct2table(measLinTable));
-            end
-            %Remove errors
-            if simpar.general.measPertCheckEnable
-                x_hat_buff(:,i) = correctErrors(x_hat_buff(:,i), delx);
-            end
-        else
-            res_los(1:2,k) = zeros(2,1);
-        end
-        
-%         H_p = 
-%         resCov(:,:,k) = 
-%         K_p = 
-%         if ~simpar.general.processPositionEnable
-%             K_p = K_p.*0;
-%         end
-%         delx = 
-%         P_hat_buff(:,:,i) = 
-%         x_hat_buff(:,i) = 
+         
     end
     
     if verbose && mod(i,100) == 0
@@ -327,14 +249,10 @@ end
 T_execution = toc;
 traj = struct('navState',x_hat_buff,...
     'navCov',P_hat_buff,...
-    'navRes_range',res_alt,...
-    'navRes_doppler',res_air,...
-    'navRes_b2i', res_b2i,...
-    'navRes_los',res_los,...
-    'navResCov_range',resCov_alt,...
-    'navResCov_doppler',resCov_air,...
-    'navResCov_b2i',resCov_b2i,...
-    'navResCov_los',resCov_los,...
+    'navRes_alt',res_alt,...
+    'navRes_air',res_air,...
+    'navResCov_alt',resCov_alt,...
+    'navResCov_air',resCov_air,...
     'time_nav',t,...
     'time_kalman',t_kalman,...
     'executionTime',T_execution,...
