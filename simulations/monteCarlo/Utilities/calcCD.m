@@ -11,8 +11,8 @@ theta_LE = stage.fin_theta_LE;
 N_fins = stage.N_fins;
 
 k = stage.k;
-d = stage.tail.d;
-D = stage.tail.D;
+d = stage.tail_d;
+D = stage.tail_D;
 
 gamma = 1.4;
 d_alpha = degtorad(3);
