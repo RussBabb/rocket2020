@@ -25,7 +25,7 @@ savefile.filename = saveName;
 %% Read in the simulation parameters
 %Define the simparams
 checkMapping = 0;
-checkProp = 0;
+checkProp = 1;
 runSingleSim = 0;
 runMonteCarlo = 0;
 savefigs = 0;
@@ -37,6 +37,7 @@ simpar.savedir = saveDir;
 simpar.rocket.I_b = [simpar.rocket.I_xx, simpar.rocket.I_xy, simpar.rocket.I_xz;
     simpar.rocket.I_xy, simpar.rocket.I_yy, simpar.rocket.I_yz;
     simpar.rocket.I_xz, simpar.rocket.I_yz, simpar.rocket.I_zz];
+simpar_ref.rocket.I_b = simpar.rocket.I_b;
 
 %% Check mapping equations
 if checkMapping
@@ -51,7 +52,7 @@ if checkProp
     simpar_ref.general.processAltimeter = 0;
     simpar_ref.general.processAirspeed = 0;
     
-    traj_propcheck = runSim_gpsIns(simpar_ref,1,1);
+    traj_propcheck = runSim(simpar_ref,1,1);
     savefile.traj_propcheck = traj_propcheck;
     h_figs_prop_check = plotNavPropErrors(traj_propcheck);
     if savefigs
@@ -74,7 +75,7 @@ if runSingleSim
     savefile.traj_single_sim = traj_single_sim;
     
     %Create Plots
-    hfigs = plotSingleSim(traj_single_sim);
+    hfigs = plotEstimationErrors(traj_single_sim);
     
     %Save Plots
     if savefigs
@@ -104,7 +105,7 @@ if runMonteCarlo
     
     % Run Monte Carlo simulation
     parfor i=1:simpar.general.N_MonteCarloRuns
-        traj(i) = runSim_gpsIns(simpar, 0, i);
+        traj(i) = runSim(simpar, 0, i);
         errors(:,:,i) = calcEstimationErrorsFromMC( traj(i).navState, ...
             traj(i).truthState );
         fprintf('%d/%d complete\n',i, simpar.general.N_MonteCarloRuns);
@@ -112,7 +113,7 @@ if runMonteCarlo
     
     % Create Monte Carlo plots
     disp('Monte Carlo simulation complete.  Generating plots...')
-    hfigs = plotMonteCarlo_gpsins(errors, traj(1));
+    hfigs = plotMonteCarlo(errors, traj(1));
     savefile.errors = errors;
     
     %Save Plots
