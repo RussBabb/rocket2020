@@ -2,15 +2,10 @@
 %  Input: time (sec), stage properties, ambient pressure (kPa)
 %  Output: Thrust (N)
 function F_thrust = calcThrust(t, stage, P_amb)
-motor = stage.motor;
 A_e = stage.A_e;
 P_sea = 101.300;
 
-if motor = "commercial"
-    F_thrust = interpProfile(t);
-elseif motor == "hybrid"
-    F_thrust = stage.F_thrust;
-end
+F_thrust = interpProfile(t);
 
 % Apply altitude adjustment
 if F_thrust > 0
