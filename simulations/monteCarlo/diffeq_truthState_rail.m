@@ -20,7 +20,6 @@ w_alt = u(13);
 w_vel = u(14);
 w_wind = u(15:17);
 
-% tau_accel = simpar.general.tau_accel;
 tau_accel = simpar.general.tau_accel;
 tau_gyro = simpar.general.tau_gyro;
 tau_alt = simpar.general.tau_alt;
