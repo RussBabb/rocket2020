@@ -14,14 +14,14 @@ function [x, x_hatcor] = correctErrors(x_hat, delx)
 
 %Get size of input
 [n_x,m_x] = size(x_hat);
-n_x = n_x+3;
+n_x = n_x+7;
 [~, m_delx] = size(delx);
 assert(m_x == m_delx);
 % assert(m_x==1 && m_delx == 1);
 
 %Correct errors
 x = zeros(n_x,m_x);
-x_hatcor = zeros(n_x-3,m_x);
+x_hatcor = zeros(n_x-7,m_x);
 for i=1:m_x
     x(1:3,i) = x_hat(1:3,i) + delx(1:3,i); %Rocket position
     x(4:6,i) = x_hat(4:6,i) + delx(4:6,i); %Rocket airspeed
