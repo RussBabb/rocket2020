@@ -16,19 +16,17 @@ function [ Bhat ] = calc_Bhat( xhat )
 % Copyright 2018 Utah State University
 
 %Unpack the inputs
-q_b2i = xhat(7:10);
-T_b2i = q2dcm(q_b2i);
+q_b2f = xhat(7:10);
+R_b2f = q2dcm(q_b2f);
 
 I3 = eye(3);
 
 %Compute Bhat
-Bhat = zeros(length(xhat)-1, 20);
+Bhat = zeros(length(xhat)-1, 12);
 Bhat(4:6,1:3) = I3;     %Accel
-Bhat(7:9,4:6) = T_b2i;  %Attitude
-Bhat(13:15,7:9) = I3;   %Gyro bias
-Bhat(16,10) = 1;        %Range bias
-Bhat(17,11) = 1;        %Doppler bias
-Bhat(18:20,12:14) = I3; %Gravity bias
-Bhat(21:23,15:17) = I3; %Star camera bias
-Bhat(24:26,18:20) = I3; %Terrain camera bias
+Bhat(7:9,4:6) = R_b2f;  %Attitude
+Bhat(10:12,7:9) = I3;   %Accel bias
+Bhat(13:15,10:12) = I3; %Gyro bias
+% Bhat(16,13) = 1;        %Altimeter bias
+% Bhat(17,14) = 1;        %Airspeed bias
 end
