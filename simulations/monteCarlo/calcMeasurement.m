@@ -27,15 +27,22 @@ switch type
         z_tilde = -r_f(3) + b_alt + nu;
         zhat_tilde = -rhat_f(3) + bhat_alt;
         
+        %Stratologger SL100 has a 1 ft resolution
+        z_tilde = z_tilde*3.28084;  %Convert from m to ft
+        z_tilde = round(z_tilde);   %Round to nearest ft
+        z_tilde = z_tilde/3.28084;  %Convert back to m
+        
         H = zeros(1, length(xhat) - 1);
         H(3) = -1;
+        H(16) = 1;
         
     case 'airspeed'
-        z_tilde = norm(v_b) + b_air + nu;
-        zhat_tilde = norm(vhat_b) + bhat_air;
+        z_tilde = v_b(1) + b_air + nu;
+        zhat_tilde = vhat_b(1) + bhat_air;
         
         H = zeros(1, length(xhat) - 1);
-        H(4:6) = vhat_b'/norm(vhat_b);
+        H(4) = 1;
+        H(17) = 1;
         
     otherwise
         error('Invalid measurement type')
