@@ -6,10 +6,10 @@ totalTimeId = tic;
 addpath('Utilities', 'Rocket Profiles')
 
 %Load resources
-global stdAtm extStdAtmAvg extStdAtmMax extStdAtmMin motorProfile
-load("StandardAtmosphere")
-load("ExtendedAtmosphere")
-load("Ces_M2150")
+% global stdAtm extStdAtmAvg extStdAtmMax extStdAtmMin motorProfile
+% load("StandardAtmosphere")
+% load("ExtendedAtmosphere")
+% load("Ces_M2150")
 
 %% Setup paths and matlab file object for saving data
 saveName = ['sim_', datestr(datetime('now'), 'yyyy_mm_dd_HH_MM_ss')];
@@ -33,6 +33,12 @@ savefigs = 0;
 [simpar, simpar_ref] = createSimParams(paramFile);
 simpar.savedir = saveDir;
 
+simpar.general.processAltimeter = 0;
+simpar.general.processAirspeed = 0;
+
+N_truthStates = simpar.general.n_truth;
+N_navStates = simpar.general.n_nav;
+
 %% Setup Inertia Tensor
 simpar.rocket.I_b = [simpar.rocket.I_xx, simpar.rocket.I_xy, simpar.rocket.I_xz;
     simpar.rocket.I_xy, simpar.rocket.I_yy, simpar.rocket.I_yz;
@@ -49,8 +55,8 @@ end
 
 %% Check propagation and nonlinear measurement modeling
 if checkProp
-    simpar_ref.general.processAltimeter = 0;
-    simpar_ref.general.processAirspeed = 0;
+    simpar_ref.general.processAltimeter = simpar.general.processAltimeter;
+    simpar_ref.general.processAirspeed = simpar.general.processAirspeed;
     
     traj_propcheck = runSim(simpar_ref,1,1);
     savefile.traj_propcheck = traj_propcheck;
@@ -68,9 +74,6 @@ end
 
 %% Run Single Simulation
 if runSingleSim
-    simpar.general.processAltimeter = 0;
-    simpar.general.processAirspeed = 0;
-    
     traj_single_sim = runSim(simpar, true, 1);
     savefile.traj_single_sim = traj_single_sim;
     
@@ -94,14 +97,9 @@ end
 
 %% Run Monte Carlo
 if runMonteCarlo
-    simpar.general.processAltimeter = 0;
-    simpar.general.processAirspeed = 0;
-
     % Preallocated error buffer to enable parallel processing
-    data = readFlightSim(simpar.general.flightSimFilename);
     nstep = simpar.general.tsim/simpar.general.dt + 1;
-    errors = zeros(N_navStates + N_featStates - 1, nstep, ...
-        simpar.general.N_MonteCarloRuns);
+    errors = zeros(N_navStates - 1, nstep, simpar.general.N_MonteCarloRuns);
     
     % Run Monte Carlo simulation
     parfor i=1:simpar.general.N_MonteCarloRuns

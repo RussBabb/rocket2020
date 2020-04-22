@@ -1,4 +1,10 @@
 function [ traj ] = runSim( simpar, verbose,  seed)
+%Load resources
+global stdAtm extStdAtmAvg extStdAtmMax extStdAtmMin motorProfile
+load("StandardAtmosphere")
+load("ExtendedAtmosphere")
+load("Ces_M2150")
+
 rng(seed);
 %RUNSIM Runs a single trajectory given the parameters in simparams
 tic;
@@ -92,6 +98,9 @@ x_buff(1:3,1) = [simpar.truth.ic.sig_rx * randn;
     simpar.truth.ic.sig_ry * randn;
     simpar.truth.ic.sig_rz * randn - simpar.init.alt];
 x_buff(4:6,1) = [0; 0; 0];
+% x_buff(4:6,1) = [simpar.truth.ic.sig_vx * randn;
+%     simpar.truth.ic.sig_vy * randn;
+%     simpar.truth.ic.sig_vz * randn];
 theta = simpar.init.elevation;
 phi = simpar.init.azimuth;
 R_ele = [cos(theta), 0, sin(theta); 0, 1, 0; -sin(theta), 0, cos(theta)];
@@ -176,7 +185,7 @@ for i=2:nstep
         u_truth(:,i), simpar);
     
     %Create sensor data at tk
-    ytilde_buff(:,i) = contInertialMeas(dx_true(4:6) - q2dcm(x_buff(7:10,i))'*[0; 0; calcGrav(-x_buff(3,i), simpar.init.lat)], x_buff(11:13,i), ...
+    ytilde_buff(:,i) = contInertialMeas(calcBodyAccel(x_buff(:,i), dx_true, simpar), x_buff(11:13,i), ...
         x_buff(15:17,i), x_buff(18:20,i), n_nu(:,i), n_omega(:,i));
     
     %Propagate the state estimate and covariance from tk-1 to tk using 
