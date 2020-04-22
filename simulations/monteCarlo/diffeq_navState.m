@@ -20,7 +20,7 @@ tau_air = simpar.general.tau_air;
 %Calculate dependent parameters
 h = -rhat_f(3);
 
-% Calculate the body to earth fixed rotation matrix and gravity magnitude
+% Calculate the body to earth fixed rotation matrix and EF gravity vector
 Rhat_b2f = q2dcm(qhat_b2f);
 g = [0; 0; calcGrav(h, simpar.init.lat)];
 

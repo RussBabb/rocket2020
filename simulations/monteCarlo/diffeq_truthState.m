@@ -62,7 +62,7 @@ C_L_b = C_L_0 + C_L_beta*beta;
 C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
 F_thrust = calcThrust(t, simpar.rocket, P_atm);
 
-% Calculate the body to earth fixed rotation matrix and gravity magnitude
+% Calculate the body to earth fixed rotation matrix and EF gravity vector
 R_b2f = q2dcm(q_b2f);
 g = [0; 0; calcGrav(h, simpar.init.lat)];
 
