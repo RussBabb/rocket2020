@@ -16,8 +16,9 @@ function [ Shat_w ] = calc_Shat_w( simpar )
 % Copyright 2018 Utah State University
 
 %Unpack the inputs
-S_a = simpar.nav.params.Q_a;
+% S_a = simpar.nav.params.Q_a;
 % S_w = simpar.nav.params.Q_w;
+S_a = simpar.nav.params.vrw^2;
 S_w = simpar.nav.params.arw^2;
 
 sig_accel_ss = simpar.nav.params.sig_accel_ss;
