@@ -29,7 +29,7 @@ plot(time, [truthState(1,:)',...
     truthState(2,:)',...
     -truthState(3,:)']);
 xlabel('Time (sec)')
-ylabel('Velocity (m/s)')
+ylabel('Position (m/s)')
 legend('North', 'East', 'Altitude')
 title('Rocket Position')
 grid on;
@@ -56,9 +56,9 @@ plot(time, [attitude(1,:)',...
     attitude(2,:)',...
     attitude(3,:)']);
 xlabel('Time (sec)')
-ylabel('Rate (rad/s)')
+ylabel('Angle (rad)')
 legend('Bank (\phi)', 'Elevation (\theta)', 'Heading (\psi)')
-title('Rocket Attitude Rates')
+title('Rocket Attitude')
 grid on;
 
 %Plot attitude rates
