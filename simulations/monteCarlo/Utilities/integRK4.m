@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [xnew, dydx] = rk4(diffeq,xold,t,ytilde,u,simparams)
+function [xnew, dydx] = integRK4(diffeq,xold,t,ytilde,u,simparams)
 
 h=simparams.general.dt;
 hh = h/2;
