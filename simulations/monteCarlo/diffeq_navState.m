@@ -24,14 +24,9 @@ h = -rhat_f(3);
 Rhat_b2f = q2dcm(qhat_b2f);
 g = [0; 0; calcGrav(h, simpar.init.lat)];
 
-% Precalculate the last portion of the wdot equation
-% Iw = [(I_b(2,2) - I_b(3,3))*w_b(2)*w_b(3) + I_b(1,3)*w_b(1)*w_b(2);
-%     (I_b(3,3) - I_b(1,1))*w_b(1)*w_b(3) + I_b(1,3)*(w_b(3)^2 - w_b(1)^2);
-%     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
-
 % Evaluate differential equations
 rhatdot_f = Rhat_b2f*vhat_b;
-vhatdot_b = nutilde_b + Rhat_b2f'*g;% - cross(omegatilde_b, vhat_b);
+vhatdot_b = nutilde_b - cross(omegatilde_b, vhat_b)  + Rhat_b2f'*g;
 qhatdot_b2f = qmult(0.5*qhat_b2f, [0; omegatilde_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 
 bhatdot_accel = -bhat_accel/tau_accel;

@@ -17,6 +17,6 @@ h = -r_f(3);
 g = [0; 0; calcGrav(h, simpar.init.lat)];
 
 % Calculate body accelerations
-A_b = vdot_b - R_b2f'*g;% + cross(w_b, v_b);
+A_b = vdot_b - R_b2f'*g + cross(w_b, v_b);
 end
 

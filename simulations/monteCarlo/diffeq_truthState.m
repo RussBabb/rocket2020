@@ -83,7 +83,7 @@ M_b = [0;
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b + v_wind_f;
-vdot_b = F_b/m + R_b2f'*g - cross(w_b, v_b) + n_nu;
+vdot_b = F_b/m - cross(w_b, v_b)  + R_b2f'*g + n_nu;
 qdot_b2f = qmult(0.5*q_b2f, [0; w_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 wdot_b = I_b\(M_b + cross(w_b, I_b*w_b)) + n_omega;
 
