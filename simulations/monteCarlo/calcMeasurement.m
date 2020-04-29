@@ -44,6 +44,13 @@ switch type
         H(4) = 1;
         H(17) = 1;
         
+    case 'gps'
+        z_tilde = r_f + nu;
+        zhat_tilde = rhat_f;
+        
+        H = zeros(3, length(xhat) - 1);
+        H(1:3,1:3) = eye(3);
+        
     otherwise
         error('Invalid measurement type')
 end
