@@ -46,6 +46,7 @@ Fhat = zeros(m-1,m-1);
 Fhat(1:3,4:6)       = R_b2f;
 Fhat(4:6,1:3)       = R_b2f'*[0, 0, 0; 0, 0, 0; 0, 0, dg];
 Fhat(4:6,4:6)       = -vx(omegatilde_b - bhat_accel);
+Fhat(4:6,10:12)     = -I3;
 Fhat(4:6,13:15)     = -vx(vhat_b);
 Fhat(7:9,13:15)     = R_b2f;
 Fhat(10:12,10:12)   = -1/tau_accel*I3;

@@ -16,6 +16,7 @@ function [ Bhat ] = calc_Bhat( xhat )
 % Copyright 2018 Utah State University
 
 %Unpack the inputs
+vhat_b = xhat(4:6);
 q_b2f = xhat(7:10);
 R_b2f = q2dcm(q_b2f);
 
@@ -24,6 +25,7 @@ I3 = eye(3);
 %Compute Bhat
 Bhat = zeros(length(xhat)-1, 12);
 Bhat(4:6,1:3) = I3;     %Accel
+Bhat(4:6,4:6) = -vx(vhat_b);
 Bhat(7:9,4:6) = R_b2f;  %Attitude
 Bhat(10:12,7:9) = I3;   %Accel bias
 Bhat(13:15,10:12) = I3; %Gyro bias
