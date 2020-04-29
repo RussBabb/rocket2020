@@ -32,7 +32,7 @@ for i=1:n
     h_filter_cov = stairs(traj.time_nav, ...
         [3*sqrt(filter_cov) -3*sqrt(filter_cov)],'--r');
     legend([h_hair(1), h_filter_cov(1)],'MC Runs','EKF 3\sigma Cov')
-    xlabel('Time (hours)')
+    xlabel('Time (sec)')
     ylabel(ylabels{i})
     set(gca, 'FontSize', 12)
 end

@@ -42,6 +42,7 @@ w_gyro_ecrv = randn(3,nstep)*sqrt(Q_gyro_ecrv/simpar.general.dt);
 w_alt_ecrv  = randn(1,nstep)*sqrt(Q_alt_ecrv/simpar.general.dt);
 w_air_ecrv  = randn(1,nstep)*sqrt(Q_air_ecrv/simpar.general.dt);
 w_wind_ecrv = randn(3,nstep)*sqrt(Q_wind_ecrv/simpar.general.dt);
+w_wind_ecrv(3,:) = zeros(1,nstep); %No wind in z direction
 
 u_truth = [w_a;
     w_w;
@@ -118,7 +119,7 @@ x_buff(21,1) = simpar.truth.ic.sig_alt*randn;
 x_buff(22,1) = simpar.truth.ic.sig_air*randn;
 x_buff(23:25,1) = [simpar.truth.ic.sig_wind * randn;
     simpar.truth.ic.sig_wind * randn;
-    simpar.truth.ic.sig_wind * randn];
+    0]; %No wind in z direction
 
 %Initialize the navigation state vector
 x_hat_buff(1:3,1) = [0; 0; -simpar.init.alt];
@@ -192,7 +193,9 @@ for i=2:nstep
     %sensor data from tk-1
 %     [x_hat_buff(:,i), ~] = integRK4('diffeq_navState', x_hat_buff(:,i-1),...
 %         t(i), ytilde_buff(:,i), 0, simpar);
-%     
+    x_hat_buff(:,i) = integEuler('diffeq_navState', x_hat_buff(:,i-1),...
+         t(i), ytilde_buff(:,i), 0, simpar);
+    
 %     P_hat_buff(:,:,i) = rk4('diffeq_navCov',...
 %         P_hat_buff(:,:,i-1),...
 %         t(i),...
@@ -202,18 +205,12 @@ for i=2:nstep
     phi = calc_PHI(x_hat_buff(:,i-1), ytilde_buff(:,i), simpar);
     B = calc_Bhat(x_hat_buff(:,i-1));
     Q = calc_Shat_w(simpar);
-    x_hat_buff(:,i) = integEuler('diffeq_navState', x_hat_buff(:,i-1),...
-         t(i), ytilde_buff(:,i), 0, simpar);
     P_hat_buff(:,:,i) = phi*P_hat_buff(:,:,i-1)*phi' + B*Q*B'*simpar.general.dt;
     
     %Propagate the error state from tk-1 to tk if testing flag is enabled
     if simpar.general.errorPropTestEnable
-        delx_buff(:,i) = rk4('diffeq_errorState',...
-            delx_buff(:,i-1),...
-            t(i),...
-            ytilde_buff(:,i),...
-            x_hat_buff(:,i-1),...
-            simpar);
+        delx_buff(:,i) = integRK4('diffeq_errorState', delx_buff(:,i-1),...
+            t(i), ytilde_buff(:,i), x_hat_buff(:,i-1), simpar);
     end
     
     %If a measurement is available, process it
@@ -224,7 +221,7 @@ for i=2:nstep
         if simpar.general.errorPropTestEnable
             checkErrorPropagation(x_buff(:,i), x_hat_buff(:,i),...
                 delx_buff(:,i));
-            pause
+            exit
         end
         k = k + 1;
         
@@ -239,6 +236,8 @@ for i=2:nstep
         res_air(k) = z_tilde_air - zhat_tilde_air;
         
         [x_hat_buff(:,i), P_hat_buff(:,:,i), resCov_air(k)] = kalmanUpdate(x_hat_buff(:,i), P_hat_buff(:,:,i), H, R_air, res_air(k), simpar.general.processAirspeed);
+        
+        %Process the gps measurement
         
         if simpar.general.measPertCheckEnable
             reslin_alt = H*delx;

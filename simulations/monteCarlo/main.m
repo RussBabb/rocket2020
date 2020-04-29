@@ -25,15 +25,15 @@ savefile.filename = saveName;
 %% Read in the simulation parameters
 %Define the simparams
 checkMapping = 0;
-checkProp = 1;
+checkProp = 0;
 runSingleSim = 0;
-runMonteCarlo = 0;
+runMonteCarlo = 1;
 savefigs = 0;
 
 [simpar, simpar_ref] = createSimParams(paramFile);
 simpar.savedir = saveDir;
 
-simpar.general.processAltimeter = 0;
+simpar.general.processAltimeter = 1;
 simpar.general.processAirspeed = 0;
 
 N_truthStates = simpar.general.n_truth;
