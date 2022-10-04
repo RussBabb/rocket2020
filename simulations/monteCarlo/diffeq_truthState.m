@@ -54,7 +54,7 @@ h = -r_f(3);
 [~, P_atm, rho_atm, c_atm, mu_atm] = getStdAtmProps(h/1000);
 R_B2f = q2dcm(q_b2f);
 
-v_air_b = v_b + R_b2f*v_wind_f; %calculate relative air-speed vector in body-fixed frame
+v_air_b = v_b + R_b2f'*v_wind_f; %calculate relative air-speed vector in body-fixed frame
 alpha = atan2(v_air_b(3), v_air_b(1));
 beta = atan2(v_air_b(2), v_air_b(1));
 vmag = norm(v_air_b);
