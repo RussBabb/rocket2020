@@ -79,7 +79,7 @@ F_b = [F_thrust + qbar*A_ref*((C_L_a + C_L_b)*sin(alpha) - C_D*cos(alpha))*cos(b
 % Calculate body moments
 M_b = [0;
     qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_a*cos(alpha) + C_D*sin(alpha));
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_b*cos(beta) + C_D*sin(beta))];
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_b*cos(beta) - C_D*sin(beta))];
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b + v_wind_f;
