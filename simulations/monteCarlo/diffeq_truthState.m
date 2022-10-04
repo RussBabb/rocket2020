@@ -57,8 +57,8 @@ beta = atan2(v_b(2), v_b(1));
 vmag = norm(v_b);
 qbar = 0.5*rho_atm*vmag^2;
 
-C_L_a = C_L_0 + C_L_alpha*alpha;
-C_L_b = C_L_0 + C_L_beta*beta;
+C_L = C_L_0 + C_L_alpha*alpha;
+C_Y = C_L_0 + C_L_beta*beta; %axi-symmetric rocket, side force behaves just like lift
 C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
 F_thrust = calcThrust(t, simpar.rocket, P_atm);
 
@@ -72,14 +72,14 @@ g = [0; 0; calcGrav(h, simpar.init.lat)];
 %     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
 
 % Calculate body forces
-F_b = [F_thrust + qbar*A_ref*((C_L_a + C_L_b)*sin(alpha) - C_D*cos(alpha))*cos(beta); %7.6.23 of Phillips does not include cos(beta)
-    qbar*A_ref*(C_D*sin(beta) - C_L_b*cos(beta));
-    qbar*A_ref*(-C_L_a*cos(alpha) - C_D*sin(alpha))];
+F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) + C_Y*sin(beta) - C_D*cos(alpha)*cos(beta); %7.6.23 of Phillips does not include cos(beta) or C_Y*sin(beta)
+    qbar*A_ref*(C_D*sin(beta) - C_Y*cos(beta));
+    qbar*A_ref*(-C_L*cos(alpha) - C_D*sin(alpha))];
 
 % Calculate body moments
 M_b = [0;
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_a*cos(alpha) + C_D*sin(alpha));
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_b*cos(beta) - C_D*sin(beta))];
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L*cos(alpha) + C_D*sin(alpha));
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_Y*cos(beta) - C_D*sin(beta))];
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b + v_wind_f;
