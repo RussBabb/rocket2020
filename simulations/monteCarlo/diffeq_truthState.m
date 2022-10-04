@@ -52,9 +52,12 @@ I_sp = simpar.rocket.I_sp;
 %Calculate dependent parameters
 h = -r_f(3);
 [~, P_atm, rho_atm, c_atm, mu_atm] = getStdAtmProps(h/1000);
-alpha = atan2(v_b(3), v_b(1));
-beta = atan2(v_b(2), v_b(1));
-vmag = norm(v_b);
+R_B2f = q2dcm(q_b2f);
+
+v_air_b = v_b + R_b2f*v_wind_f; %calculate relative air-speed vector in body-fixed frame
+alpha = atan2(v_air_b(3), v_air_b(1));
+beta = atan2(v_air_b(2), v_air_b(1));
+vmag = norm(v_air_b);
 qbar = 0.5*rho_atm*vmag^2;
 
 C_L = C_L_0 + C_L_alpha*alpha;
@@ -82,7 +85,7 @@ M_b = [0;
     qbar*A_ref*(x_cg - x_cp)/c_ref*(C_Y*cos(beta) - C_D*sin(beta))];
 
 % Evaluate differential equations
-rdot_f = R_b2f*v_b + v_wind_f;
+rdot_f = R_b2f*v_b;
 vdot_b = F_b/m - cross(w_b, v_b)  + R_b2f'*g + n_nu;
 qdot_b2f = qmult(0.5*q_b2f, [0; w_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 wdot_b = I_b\(M_b + cross(w_b, I_b*w_b)) + n_omega;
