@@ -38,7 +38,8 @@ g_0 = simpar.constants.g_0;
 A_ref = simpar.rocket.A_ref;
 c_ref = simpar.rocket.c_ref;
 x_cp = simpar.rocket.x_cp;
-x_cg = simpar.rocket.x_cg_b;
+x_cg_i = simpar.rocket.x_cg_i;
+x_cg_b = simpar.rocket.x_cg_b;
 C_L_0 = simpar.rocket.C_L_0;
 C_L_alpha = simpar.rocket.C_L_alpha;
 C_L_beta = simpar.rocket.C_L_beta;
@@ -48,6 +49,8 @@ I_b = simpar.rocket.I_b;
 % F_thrust = simpar.rocket.F_thrust;
 I_sp = simpar.rocket.I_sp;
 % mdot = simpar.rocket.mdot;
+m_total = simpar.rocket.m_total;
+m_prop = simpar.rocket.m_prop;
 
 %Calculate dependent parameters
 h = -r_f(3);
@@ -59,6 +62,8 @@ alpha = atan2(v_air_b(3), v_air_b(1));
 beta = atan2(v_air_b(2), v_air_b(1));
 vmag = norm(v_air_b);
 qbar = 0.5*rho_atm*vmag^2;
+
+x_cg = interp1([x_cg_i, x_cg_b], [m_total, m_total - m_prop], m); %interpolate rocket cg location based on current mass
 
 C_L = C_L_0 + C_L_alpha*alpha;
 C_Y = C_L_0 + C_L_beta*beta; %axi-symmetric rocket, side force behaves just like lift
