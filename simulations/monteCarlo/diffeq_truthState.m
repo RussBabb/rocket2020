@@ -38,7 +38,8 @@ g_0 = simpar.constants.g_0;
 A_ref = simpar.rocket.A_ref;
 c_ref = simpar.rocket.c_ref;
 x_cp = simpar.rocket.x_cp;
-x_cg = simpar.rocket.x_cg_b;
+x_cg_i = simpar.rocket.x_cg_i;
+x_cg_b = simpar.rocket.x_cg_b;
 C_L_0 = simpar.rocket.C_L_0;
 C_L_alpha = simpar.rocket.C_L_alpha;
 C_L_beta = simpar.rocket.C_L_beta;
@@ -48,17 +49,24 @@ I_b = simpar.rocket.I_b;
 % F_thrust = simpar.rocket.F_thrust;
 I_sp = simpar.rocket.I_sp;
 % mdot = simpar.rocket.mdot;
+m_total = simpar.rocket.m_total;
+m_prop = simpar.rocket.m_prop;
 
 %Calculate dependent parameters
 h = -r_f(3);
 [~, P_atm, rho_atm, c_atm, mu_atm] = getStdAtmProps(h/1000);
-alpha = atan2(v_b(3), v_b(1));
-beta = atan2(v_b(2), v_b(1));
-vmag = norm(v_b);
+R_B2f = q2dcm(q_b2f);
+
+v_air_b = v_b + R_b2f'*v_wind_f; %calculate relative air-speed vector in body-fixed frame
+alpha = atan2(v_air_b(3), v_air_b(1));
+beta = atan2(v_air_b(2), v_air_b(1));
+vmag = norm(v_air_b);
 qbar = 0.5*rho_atm*vmag^2;
 
-C_L_a = C_L_0 + C_L_alpha*alpha;
-C_L_b = C_L_0 + C_L_beta*beta;
+x_cg = interp1([x_cg_i, x_cg_b], [m_total, m_total - m_prop], m); %interpolate rocket cg location based on current mass
+
+C_L = C_L_0 + C_L_alpha*alpha;
+C_Y = C_L_0 + C_L_beta*beta; %axi-symmetric rocket, side force behaves just like lift
 C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
 F_thrust = calcThrust(t, simpar.rocket, P_atm);
 
@@ -72,17 +80,17 @@ g = [0; 0; calcGrav(h, simpar.init.lat)];
 %     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
 
 % Calculate body forces
-F_b = [F_thrust + qbar*A_ref*((C_L_a + C_L_b)*sin(alpha) - C_D*cos(alpha))*cos(beta); %7.6.23 of Phillips does not include cos(beta)
-    qbar*A_ref*(C_D*sin(beta) - C_L_b*cos(beta));
-    qbar*A_ref*(-C_L_a*cos(alpha) - C_D*sin(alpha))];
+F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) + C_Y*sin(beta) - C_D*cos(alpha)*cos(beta); %7.6.23 of Phillips does not include cos(beta) or C_Y*sin(beta)
+    qbar*A_ref*(C_D*sin(beta) - C_Y*cos(beta));
+    qbar*A_ref*(-C_L*cos(alpha) - C_D*sin(alpha))];
 
 % Calculate body moments
 M_b = [0;
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_a*cos(alpha) + C_D*sin(alpha));
-    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L_b*cos(beta) + C_D*sin(beta))];
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L*cos(alpha) + C_D*sin(alpha));
+    qbar*A_ref*(x_cg - x_cp)/c_ref*(C_Y*cos(beta) - C_D*sin(beta))];
 
 % Evaluate differential equations
-rdot_f = R_b2f*v_b + v_wind_f;
+rdot_f = R_b2f*v_b;
 vdot_b = F_b/m - cross(w_b, v_b)  + R_b2f'*g + n_nu;
 qdot_b2f = qmult(0.5*q_b2f, [0; w_b]); %Consider changing to eq 11.5.11 from Phillips for real-time efficiency
 wdot_b = I_b\(M_b + cross(w_b, I_b*w_b)) + n_omega;
