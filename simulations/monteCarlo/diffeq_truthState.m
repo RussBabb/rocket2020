@@ -68,7 +68,10 @@ x_cg = interp1([x_cg_i, x_cg_b], [m_total, m_total - m_prop], m); %interpolate r
 C_L = C_L_0 + C_L_alpha*alpha;
 C_Y = C_L_0 + C_L_beta*beta; %axi-symmetric rocket, side force behaves just like lift
 C_D = calcCD(vmag, simpar.rocket, rho_atm, c_atm, mu_atm);
-F_thrust = calcThrust(t, simpar.rocket, P_atm);
+
+thrust = calcThrust(t, simpar.rocket, P_atm);
+dragMain = calcFdragChute(qbar, t, simpar.rocket.main);
+dragDrogue = calcFdragChute(qbar, t, simpar.rocket.drogue);
 
 % Calculate the body to earth fixed rotation matrix and EF gravity vector
 R_b2f = q2dcm(q_b2f);
@@ -80,14 +83,24 @@ g = [0; 0; calcGrav(h, simpar.init.lat)];
 %     (I_b(1,1) - I_b(2,2))*w_b(1)*w_b(2) + I_b(1,3)*w_b(2)*w_b(3);];
 
 % Calculate body forces
-F_b = [F_thrust + qbar*A_ref*(C_L*sin(alpha) + C_Y*sin(beta) - C_D*cos(alpha)*cos(beta); %7.6.23 of Phillips does not include cos(beta) or C_Y*sin(beta)
+F_aero = [qbar*A_ref*(C_L*sin(alpha) + C_Y*sin(beta) - C_D*cos(alpha)*cos(beta); %7.6.23 of Phillips does not include cos(beta) or C_Y*sin(beta)
     qbar*A_ref*(C_D*sin(beta) - C_Y*cos(beta));
     qbar*A_ref*(-C_L*cos(alpha) - C_D*sin(alpha))];
 
+F_thrust = [thrust; 0; 0];
+F_main = -v_air_b/vmag*dragMain;
+F_drogue = -v_air_b/vmag*dragDrogue;
+
+F_b = F_aero + F_thrust + F_main + F_drogue;
+
 % Calculate body moments
-M_b = [0;
+M_aero = [0;
     qbar*A_ref*(x_cg - x_cp)/c_ref*(C_L*cos(alpha) + C_D*sin(alpha));
     qbar*A_ref*(x_cg - x_cp)/c_ref*(C_Y*cos(beta) - C_D*sin(beta))];
+
+M_chutes = cross([x_cg; 0; 0], F_main + F_drogue);
+
+M_b = M_aero + M_chutes;
 
 % Evaluate differential equations
 rdot_f = R_b2f*v_b;
