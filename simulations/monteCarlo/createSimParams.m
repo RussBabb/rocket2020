@@ -24,7 +24,15 @@ end
 table = readtable(parameterFile, 'Sheet', 'rocketProps');
 [num_params,~] = size(table);
 for i=1:num_params
-    simparams.rocket.(string(table{i,1})) = table{i,5};
+    items = split(string(table{i,1}), '.');
+    switch length(items)
+        case 1
+            simparams.rocket.(items{1}) = table{i,5};
+        case 2
+            simparams.rocket.(items{1}).(items{2}) = table{i,5};
+        case 3
+            simparams.rocket.(items{1}).(items{2}).(items{3}) = table{i,5};
+    end
 end
 
 %Read in truth state parameters
